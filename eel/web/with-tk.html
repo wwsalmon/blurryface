@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SZH Blur Tool</title>
+    <script type="text/javascript" src="/eel.js"></script>
+</head>
+
+<body>
+    <div style="max-width: 700px; margin: 0 auto; padding: 16px">
+        <h1>Blur tool</h1>
+        <button id="photoIn">Choose photo</button>
+        <div id="dynamic">
+
+        </div>
+    </div>
+    <script>
+        const photoIn = document.getElementById("photoIn");
+
+        const dynamic = document.getElementById("dynamic");
+
+        let photoPath = "";
+        
+        console.log(eel);
+        photoIn.onclick = async () => {
+            const photoPathVal = await eel.button_get_photo()();
+
+            if (photoPathVal) {
+                photoPath = photoPathVal;
+
+                const img = document.createElement("img");
+                
+                img.setAttribute("src", photoPath);
+                
+                const label = document.createElement("h2");
+
+                label.textContent = photoPath;
+
+                dynamic.appendChild(label);
+                dynamic.appendChild(img);
+            }
+        }
+    </script>
+</body>
+
+</html>
