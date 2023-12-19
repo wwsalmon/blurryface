@@ -25,6 +25,8 @@ def process_image(imageBase64):
 
 @eel.expose
 def detect_faces(imageBase64):
+    print("Detecting faces...")
+
     imageFile = BytesIO(base64.b64decode(imageBase64))
     pimage = Image.open(imageFile)
 
@@ -33,6 +35,8 @@ def detect_faces(imageBase64):
     threshold = 0.5
 
     faces = RetinaFace.detect_faces(numpy.array(pimage), threshold = threshold)
+
+    print("Blurring faces...")
 
     for face in faces.values():
         # get area from recognizer
@@ -53,6 +57,14 @@ def detect_faces(imageBase64):
         pimage.paste(section, area_expanded)
 
     pimage.show()
+
+    # turn back into base64 to return
+    buffered = BytesIO()
+    pimage.save(buffered, format="JPEG") # JPEG probably best almost always for photos
+    image_string = base64.b64encode(buffered.getvalue()).decode("utf-8")
+    # return image_string
+
+    return image_string
 
 eel.init("web")
 eel.start("index.html")
