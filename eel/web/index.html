@@ -72,6 +72,13 @@
         .hidden {
             display: none;
         }
+
+        .container-slider {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            justify-content: center;
+        }
     </style>
 </head>
 
@@ -92,12 +99,30 @@
             <p class="font-sans hidden" id="outputAfterText">Note: no guarantee that all faces were detected and blurred, or that the blurring was be sufficient to prevent
             identification. Please carefully check the output photo before using.</p>
             <div id="outputPreview"></div>
+            <div style="margin: 1em 0;">
+                <div class="container-slider">
+                    <label for="blurSlider">Blur (def. 10%)</label>
+                    <input type="range" min="0" max="50" value="10" id="blurSlider" name="blurSlider" step="1">
+                    <span id="blurReadout">10%</span>
+                </div>
+                <div class="container-slider">
+                    <label for="paddingSlider">Padding (def. 10%)</label>
+                    <input type="range" min="0" max="100" value="10" id="paddingSlider" name="paddingSlider" step="1">
+                    <span id="paddingReadout">10%</span>
+                </div>
+                <div class="container-slider">
+                    <label for="sensitivitySlider">Face detect sens. (def. 50%)</label>
+                    <input type="range" min="0" max="100" value="50" id="sensitivitySlider" name="sensitivitySlider" step="1">
+                    <span id="sensitivityReadout">50%</span>
+                </div>
+            </div>
             <button class="cta" id="triggerBlur">Automatically blur faces</button>
             <p id="outputLoadingHeader" class="hidden"><b>Blurring...</b></p>
             <p class="font-sans" id="outputBeforeText">Face detection and blurring happen completely on your device. No photos or information are ever uploaded to any server.</p>
             <p class="font-sans hidden" id="outputLoadingText">This will take several seconds, depending on the speed of your computer and size of your image.</p>
             <div style="display: flex; align-items: center; justify-content: center; gap: 12px" id="outputAfterButtons">
                 <button class="cta hidden" id="saveButton">Save</button>
+                <button class="cta negative hidden" id="againButton">Try again</button>
                 <button class="cta negative" id="resetButton">Reset</button>
             </div>
         </div>
@@ -119,6 +144,37 @@
         const outputPreview = document.getElementById("outputPreview");
         const saveButton = document.getElementById("saveButton");
         const resetButton = document.getElementById("resetButton");
+        const againButton = document.getElementById("againButton");
+
+        // adjustable variables and sliders
+        let blur = 10;
+        let padding = 10;
+        let sensitivity = 50;
+
+        const blurSlider = document.getElementById("blurSlider");
+        const blurReadout = document.getElementById("blurReadout");
+        const paddingSlider = document.getElementById("paddingSlider");
+        const paddingReadout = document.getElementById("paddingReadout");
+        const sensitivitySlider = document.getElementById("sensitivitySlider");
+        const sensitivityReadout = document.getElementById("sensitivityReadout");
+
+        blurSlider.onchange = e => {
+            blur = e.target.value;
+            blurReadout.textContent = blur + "%";
+            updateBlurClick();
+        }
+
+        paddingSlider.onchange = e => {
+            padding = e.target.value;
+            paddingReadout.textContent = padding + "%";
+            updateBlurClick();
+        }
+
+        sensitivitySlider.onchange = e => {
+            sensitivity = e.target.value;
+            sensitivityReadout.textContent = sensitivity + "%";
+            updateBlurClick();
+        }
 
         // state (ish) variables
         let photoPath = "";
@@ -132,6 +188,7 @@
 
             containerOutput.classList.remove("active");
             saveButton.classList.add("hidden");
+            againButton.classList.add("hidden");
             outputAfterText.classList.add("hidden");
             outputBeforeText.classList.remove("hidden");
             triggerBlur.classList.remove("hidden");
@@ -139,6 +196,54 @@
 
             containerInput.classList.add("active");
             inputPreview.innerHTML = "";
+        }
+
+        // blur button hit function
+        async function onBlur(photoBase64, blur, padding, sensitivity) {
+            if (!photoBase64) console.log(e);
+
+            // change to loading UI
+            outputPreview.innerHTML = "";
+            saveButton.classList.add("hidden");
+            againButton.classList.add("hidden");
+            outputAfterText.classList.add("hidden");
+            outputBeforeText.classList.add("hidden");
+            outputLoadingHeader.classList.remove("hidden");
+            outputLoadingText.classList.remove("hidden");
+            triggerBlur.classList.add("hidden");
+
+            // get blurred photo
+            const blurValue = blur / 100;
+            const paddingValue = padding / 100;
+            const threshold = -(sensitivity / 100) + 1;
+
+            const blurredPhotoBase64 = await eel.detect_faces(photoBase64,blurValue,paddingValue,threshold)();
+            const blurredPhotoUrl = "data:image/jpeg;base64," + blurredPhotoBase64;
+
+            // show blurred photo, hide loading UI
+            const blurredPhoto = document.createElement("img");
+            blurredPhoto.setAttribute("src", blurredPhotoUrl);
+            outputPreview.appendChild(blurredPhoto);
+            outputLoadingHeader.classList.add("hidden");
+            outputLoadingText.classList.add("hidden");
+            outputAfterText.classList.remove("hidden");
+            saveButton.classList.remove("hidden");
+            againButton.classList.remove("hidden");
+
+            // save button onclick logic
+            saveButton.onclick = () => {
+                const downloadLink = document.createElement("a");
+                downloadLink.href = blurredPhotoUrl;
+                downloadLink.download = "blurred_photo";
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                downloadLink.remove();
+            }
+        }
+
+        function updateBlurClick() {
+            triggerBlur.onclick = () => onBlur(photoBase64, blur, padding, sensitivity);
+            againButton.onclick = () => onBlur(photoBase64, blur, padding, sensitivity);
         }
         
         // photo upload logic
@@ -160,37 +265,8 @@
                 containerInput.classList.remove("active");
                 containerOutput.classList.add("active");
 
-                // trigger button logic
-                triggerBlur.onclick = async () => {
-                    // change to loading UI
-                    outputBeforeText.classList.add("hidden");
-                    outputLoadingHeader.classList.remove("hidden");
-                    outputLoadingText.classList.remove("hidden");
-                    triggerBlur.classList.add("hidden");
-
-                    // wait to receive blurred photo
-                    const blurredPhotoBase64 = await eel.detect_faces(photoBase64)();
-                    const blurredPhotoUrl = "data:image/jpeg;base64," + blurredPhotoBase64;
-
-                    // show blurred photo, hide loading UI
-                    const blurredPhoto = document.createElement("img");
-                    blurredPhoto.setAttribute("src", blurredPhotoUrl);
-                    outputPreview.appendChild(blurredPhoto);
-                    outputLoadingHeader.classList.add("hidden");
-                    outputLoadingText.classList.add("hidden");
-                    outputAfterText.classList.remove("hidden");
-                    saveButton.classList.remove("hidden");
-
-                    // save button onclick logic
-                    saveButton.onclick = () => {
-                        const downloadLink = document.createElement("a");
-                        downloadLink.href = blurredPhotoUrl;
-                        downloadLink.download = "blurred_photo";
-                        document.body.appendChild(downloadLink);
-                        downloadLink.click();
-                        downloadLink.remove();
-                    }
-                }
+                // update trigger button with photoBase64
+                updateBlurClick();
             }
             reader.onerror = e => {
                 console.log(e);

@@ -24,15 +24,11 @@ def process_image(imageBase64):
     pimage.show()
 
 @eel.expose
-def detect_faces(imageBase64):
+def detect_faces(imageBase64, blur = 0.1, padding = 0.1, threshold = 0.5):
     print("Detecting faces...")
 
     imageFile = BytesIO(base64.b64decode(imageBase64))
     pimage = Image.open(imageFile)
-
-    padding = 0.1
-    blur = 0.1
-    threshold = 0.5
 
     faces = RetinaFace.detect_faces(numpy.array(pimage), threshold = threshold)
 
