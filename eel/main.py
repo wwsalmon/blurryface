@@ -56,14 +56,10 @@ def detect_faces(imageBase64):
         section = section.filter(ImageFilter.GaussianBlur(radius = blur_abs))
         pimage.paste(section, area_expanded)
 
-    pimage.show()
-
     # turn back into base64 to return
     buffered = BytesIO()
     pimage.save(buffered, format="JPEG") # JPEG probably best almost always for photos
     image_string = base64.b64encode(buffered.getvalue()).decode("utf-8")
-    # return image_string
-
     return image_string
 
 eel.init("web")

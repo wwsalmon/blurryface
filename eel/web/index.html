@@ -9,79 +9,191 @@
     <style>
         body {
             background-color: #F6F6F6;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            text-align: center;
+            margin: 0;
+        }
+
+        .font-sans {
             font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
         }
 
-        img {
-            max-width: 700px;
-            max-height: 700px;
+        .container-half {
+            flex: 50% 0 0;
+            width: 50%;
+            padding: 16px;
+            min-width: 0;
+            box-sizing: border-box;
+        }
+
+        .container-half.active {
+            background-color: white;
+        }
+
+        .container-half:not(.active) {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        #container img {
+            max-width: 100%;
+            max-height: calc(100vh - 300px);
+            display: block;
+            margin: 1em auto;
+        }
+
+        #container h2 {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        #container p {
+            max-width: 400px;
+            margin: 1em auto;
+        }
+
+        .cta {
+            font-size: 16px;
+            display: inline-block;
+            padding: 10px;
+            font-weight: 700;
+            border: 1px solid black;
+            background-color: #FFD933;
+        }
+
+        .cta:hover {
+            opacity: 0.75;
+        }
+
+        .cta.negative {
+            background-color: transparent;
+        }
+
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 
 <body>
-    <div style="max-width: 700px; margin: 0 auto; padding: 16px">
-        <h1>Blur tool</h1>
-        <input type="file" id="photoIn">
-        <div id="dynamic">
-
+    <div id="topbar" style="display: flex; width: 100%; height: 64px; justify-content: center; align-items: center;">
+        <img src="blurryface-logo.png" alt="" style="height: 28px">
+    </div>
+    <div id="container" style="display: flex; width: 100%; min-height: calc(100vh - 64px);">
+        <div class="container-half active" id="containerInput">
+            <h2>Input photo</h2>
+            <input type="file" id="photoIn">
+            <div id="inputPreview"></div>
+            <p class="font-sans" id="inputText"><strong>Load a photo you would like to blur faces in to begin.</strong> Note that this app works completely offline - no photos or
+            information are ever uploaded to any server.</p>
+        </div>
+        <div class="container-half" id="containerOutput">
+            <h2>Output photo</h2>
+            <p class="font-sans hidden" id="outputAfterText">Note: no guarantee that all faces were detected and blurred, or that the blurring was be sufficient to prevent
+            identification. Please carefully check the output photo before using.</p>
+            <div id="outputPreview"></div>
+            <button class="cta" id="triggerBlur">Automatically blur faces</button>
+            <p id="outputLoadingHeader" class="hidden"><b>Blurring...</b></p>
+            <p class="font-sans" id="outputBeforeText">Face detection and blurring happen completely on your device. No photos or information are ever uploaded to any server.</p>
+            <p class="font-sans hidden" id="outputLoadingText">This will take several seconds, depending on the speed of your computer and size of your image.</p>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 12px" id="outputAfterButtons">
+                <button class="cta hidden" id="saveButton">Save</button>
+                <button class="cta negative" id="resetButton">Reset</button>
+            </div>
         </div>
     </div>
     <script>
+        // selecting each part of UI
         const photoIn = document.getElementById("photoIn");
 
-        const dynamic = document.getElementById("dynamic");
+        const containerInput = document.getElementById("containerInput");
+        const inputPreview = document.getElementById("inputPreview");
+        const inputText = document.getElementById("inputText");
 
+        const containerOutput = document.getElementById("containerOutput");
+        const triggerBlur = document.getElementById("triggerBlur");
+        const outputBeforeText = document.getElementById("outputBeforeText");
+        const outputLoadingHeader = document.getElementById("outputLoadingHeader");
+        const outputLoadingText = document.getElementById("outputLoadingText");
+        const outputAfterText = document.getElementById("outputAfterText");
+        const outputPreview = document.getElementById("outputPreview");
+        const saveButton = document.getElementById("saveButton");
+        const resetButton = document.getElementById("resetButton");
+
+        // state (ish) variables
         let photoPath = "";
         let photoBase64 = "";
+
+        // on reset, return everything to original screen
+        resetButton.onclick = () => {
+            photoIn.value = null;
+            photoPath = "";
+            photoBase64 = "";
+
+            containerOutput.classList.remove("active");
+            saveButton.classList.add("hidden");
+            outputAfterText.classList.add("hidden");
+            outputBeforeText.classList.remove("hidden");
+            triggerBlur.classList.remove("hidden");
+            outputPreview.innerHTML = "";
+
+            containerInput.classList.add("active");
+            inputPreview.innerHTML = "";
+        }
         
+        // photo upload logic
         photoIn.onchange = async e => {
             const reader = new FileReader();
-            reader.readAsDataURL(event.target.files[0]);
+            reader.readAsDataURL(e.target.files[0]);
             reader.onload = () => {
                 const result = reader.result;
-
-                console.log(result);
-
                 const base64 = result.split("base64,")[1];
                 photoBase64 = base64;
 
-                const blurButton = document.createElement("button");
-                blurButton.textContent = "Auto-blur faces in this photo";
-                blurButton.onclick = async () => {
-                    const blurredPhotoBase64 = await eel.detect_faces(photoBase64)();
+                // add input preview to DOM
+                const src = URL.createObjectURL(e.target.files[0]);
+                const img = document.createElement("img");
+                img.setAttribute("src", src);
+                inputPreview.appendChild(img);
+                
+                // make input container inactive, start up output container
+                containerInput.classList.remove("active");
+                containerOutput.classList.add("active");
 
+                // trigger button logic
+                triggerBlur.onclick = async () => {
+                    // change to loading UI
+                    outputBeforeText.classList.add("hidden");
+                    outputLoadingHeader.classList.remove("hidden");
+                    outputLoadingText.classList.remove("hidden");
+                    triggerBlur.classList.add("hidden");
+
+                    // wait to receive blurred photo
+                    const blurredPhotoBase64 = await eel.detect_faces(photoBase64)();
                     const blurredPhotoUrl = "data:image/jpeg;base64," + blurredPhotoBase64;
 
+                    // show blurred photo, hide loading UI
                     const blurredPhoto = document.createElement("img");
                     blurredPhoto.setAttribute("src", blurredPhotoUrl);
-                    dynamic.appendChild(blurredPhoto);
+                    outputPreview.appendChild(blurredPhoto);
+                    outputLoadingHeader.classList.add("hidden");
+                    outputLoadingText.classList.add("hidden");
+                    outputAfterText.classList.remove("hidden");
+                    saveButton.classList.remove("hidden");
 
-                    console.log(blurredPhotoBase64);                    
+                    // save button onclick logic
+                    saveButton.onclick = () => {
+                        const downloadLink = document.createElement("a");
+                        downloadLink.href = blurredPhotoUrl;
+                        downloadLink.download = "blurred_photo";
+                        document.body.appendChild(downloadLink);
+                        downloadLink.click();
+                        downloadLink.remove();
+                    }
                 }
-                dynamic.appendChild(blurButton);
             }
             reader.onerror = e => {
                 console.log(e);
-            }
-
-            const src = URL.createObjectURL(event.target.files[0]);
-
-            if (src) {
-
-                dynamic.innerHTML = ""; // clear previous previews
-
-                const img = document.createElement("img");
-                
-                img.setAttribute("src", src);
-                img.setAttribute("id", "previewPhoto");
-                
-                const label = document.createElement("h2");
-
-                label.textContent = src;
-
-                dynamic.appendChild(label);
-                dynamic.appendChild(img);
             }
         }
     </script>
