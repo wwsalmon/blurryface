@@ -10,7 +10,7 @@ It was born out of the need to blur faces when publishing photos of protests, es
 
 ## Dev notes
 
-Need to make an environment so that the built exe is a *lot* smaller. It's 330 MB right now
+Make venv then install packages with `pip install -r requirements.txt`. Update with `pip freeze > requirements.txt`
 
 Build commands, per [Eel instructions](https://github.com/python-eel/Eel#building-distributable-binary-with-pyinstaller) -- cd to `eel` folder and then build with the following:
 - Windows: `python -m eel main.py web --noconsole --onefile --icon icons/icon.ico -n Blurryface`.

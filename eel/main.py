@@ -1,21 +1,21 @@
 import eel
-from tkinter import Tk, filedialog
 from PIL import Image, ImageFilter
 from io import BytesIO
 import base64
 from retinaface import RetinaFace
 import math
 import numpy
+# from tkinter import Tk, filedialog
 
 # only used for with-tk.html
-@eel.expose
-def button_get_photo():
-    root = Tk()
-    root.withdraw()
-    root.wm_attributes("-topmost", 1)
-    photo = filedialog.askopenfile(filetypes = [("Image files", ".jpg, .jpeg, .png")])
-    print(photo.name)
-    return photo.name
+# @eel.expose
+# def button_get_photo():
+#     root = Tk()
+#     root.withdraw()
+#     root.wm_attributes("-topmost", 1)
+#     photo = filedialog.askopenfile(filetypes = [("Image files", ".jpg, .jpeg, .png")])
+#     print(photo.name)
+#     return photo.name
 
 @eel.expose
 def process_image(imageBase64):
