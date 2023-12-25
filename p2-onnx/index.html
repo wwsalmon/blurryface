@@ -9,13 +9,27 @@
     <script src="./ort.min.js"></script>
     <script src="./jimp.min.js"></script>
     <script>
+        ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/";
+
         // this reads from url. to read from file eventually: https://github.com/jimp-dev/jimp/issues/842
-        Jimp.read("/clear.jpg").then(image => {
-            image.resize(640, 320);
+        async function main() {
+            console.log("1. Loading image...");
+            const image = await Jimp.read("/clear.jpg");
+
+            console.log("2. Processing image...");
+            image.resize(480, 640);
             const imageData = image.bitmap.data; // rgba array
-            const imageTensor = imageToTensor(imageData, [1, 3, 640, 320]);
+            const imageTensor = imageToTensor(imageData, [1, 3, 480, 640]);
             console.log(imageTensor);
-        });
+
+            console.log("3. Initializing session...");
+            const session = await ort.InferenceSession.create("./version-RFB-640.onnx");
+
+            console.log("4. Running inference...");
+            const output = await session.run({input: imageTensor});
+
+            console.log(output);
+        }
 
         // adapted from https://onnxruntime.ai/docs/tutorials/web/classify-images-nextjs-github-template.html
         // dims: number[] => Tensor
@@ -29,48 +43,17 @@
                 // skip data[i + 3] to filter out the alpha channel
             }
 
-            // 3. Concatenate RGB to transpose [224, 224, 3] -> [3, 224, 224] to a number array
             const transposedData = redArray.concat(greenArray).concat(blueArray);
 
-            let i, l = transposedData.length; // length, we need this for the loop
+            let i, l = transposedData.length;
 
-            // create the Float32Array size 3 * 224 * 224 for these dimensions output
             const float32Data = new Float32Array(dims[1] * dims[2] * dims[3]);
             for (i = 0; i < l; i++) {
-                float32Data[i] = transposedData[i] / 255.0; // convert to float
+                float32Data[i] = transposedData[i] / 255.0;
             }
 
-            // 5. create the tensor object from onnxruntime-web.
             const inputTensor = new ort.Tensor("float32", float32Data, dims);
             return inputTensor;
-        }
-
-        ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/";
-
-        async function main() {
-            try {
-                // const session = await ort.InferenceSession.create("./version-RFB-320.onnx");
-                
-                const session = await ort.InferenceSession.create('./model.onnx');
-
-                // prepare inputs. a tensor need its corresponding TypedArray as data
-                const dataA = Float32Array.from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
-                const dataB = Float32Array.from([10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]);
-                const tensorA = new ort.Tensor('float32', dataA, [3, 4]);
-                const tensorB = new ort.Tensor('float32', dataB, [4, 3]);
-
-                // prepare feeds. use model input names as keys.
-                const feeds = { a: tensorA, b: tensorB };
-
-                // feed inputs and run
-                const results = await session.run(feeds);
-
-                // read from results
-                const dataC = results.c.data;
-                console.log(`data of result tensor 'c': ${dataC}`);
-            } catch (e) {
-                console.log(e);
-            }
         }
 
         main();
