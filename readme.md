@@ -1,14 +1,15 @@
 # Blurryface: offline face blurring tool
 
-Blurryface is a prototype (made in a few days, potentially buggy, but functional in most cases) Windows/Mac OS app for automatically blurring faces in photos.
+Prototype Windows/Mac OS app for automatically blurring faces in photos. It was born out of the need to blur faces when publishing photos of protests, especially Palestine solidarity protests after Oct. 7, 2023.
 
-The app is built using Python, [Eel](https://github.com/python-eel/Eel), and HTML/CSS/JS, and built using [Pyinstaller](https://pyinstaller.org/en/stable/). It works completely offline -- no photos or information are ever uploaded anywhere when using the app, and all face detection and image processing happens on-device.
-
-The app uses RetinaFace for face detection and Pillow for blurring/image processing.
-
-It was born out of the need to blur faces when publishing photos of protests, especially Palestine liberation protests after Oct. 7, 2023.
+There are several prototype versions currently in the repository
+- P0: initial tests with Python scripts. MVP using RetinaFace
+- P1: functional but suboptimal (330 mb bundle, a bit slow) Python Eel desktop app, using RetinaFace
+- P2: onnxruntime-web and neutrino app, using UltraFace (modified RetinaFace)
 
 ## Dev notes
+
+### P1
 
 Make venv then install packages with `pip install -r requirements.txt`. Update with `pip freeze > requirements.txt`
 
@@ -18,7 +19,7 @@ Build commands, per [Eel instructions](https://github.com/python-eel/Eel#buildin
 
 12/20/2023: bottle v0.12.25 seems to cause problems with the Pyinstaller Windows build. Per this [StackOverflow thread](https://stackoverflow.com/questions/75192206/why-my-packaged-eel-app-failed-to-execute-attributeerror-nonetype-object-ha) I manually replaced bottle.py in my AppData Scripts and site-packages folders with the [v0.13-dev version of the file in the bottle.py repository](https://github.com/bottlepy/bottle/blob/master/bottle.py).
 
-## Old notes
+### P0
 
 objectives/constraints
 - must work offline and on-device, be reasonably fast on a reasonable laptop

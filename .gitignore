@@ -2,7 +2,7 @@ sensitive-test-images
 .DS_Store
 
 # pyinstaller
-eel/build
-eel/dist
+p1-eel/build
+p1-eel/dist
 *.manifest
 *.spec
