@@ -6,8 +6,10 @@
     <title>Document</title>
 </head>
 <body>
+    <canvas id="demoCanvas" width="1920" height="1279"></canvas>
     <script src="./ort.min.js"></script>
     <script src="./jimp.min.js"></script>
+    <script src="./box_utils.js"></script>
     <script>
         ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/";
 
@@ -28,7 +30,41 @@
             console.log("4. Running inference...");
             const output = await session.run({input: imageTensor});
 
-            console.log(output);
+            console.log("5. Processing output...");
+            const allScores = output.scores.data;
+            const allBoxes = output.boxes.data;
+            let results = [];
+            for (let i = 0; i < allScores.length / 2; i ++) {
+                const scoreIndex = 2 * i + 1;
+                const thisScore = allScores[scoreIndex];
+                if (thisScore > 0.10) {
+                    const thisBox = [allBoxes[4 * i], allBoxes[4 * i + 1], allBoxes[4 * i + 2], allBoxes[4 * i + 3]];
+                    const thisResult = {score: thisScore, box: thisBox};
+                    results.push(thisResult);
+                }
+            }
+            results = nms(results);
+            console.log(results);
+
+            console.log("6. Painting on canvas...");
+            const canvas = document.getElementById("demoCanvas");
+            const ctx = canvas.getContext("2d");
+            const img = new Image();
+            img.src = "/clear.jpg";
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0);
+
+                for (let result of results) {
+                    const x1 = result.box[0] * 1920;
+                    const x2 = result.box[2] * 1920;
+                    const w = x2 - x1;
+                    const y1 = result.box[1] * 1729;
+                    const y2 = result.box[3] * 1729;
+                    const h = y2 - y1;
+                    ctx.strokeStyle = "red";
+                    ctx.strokeRect(x1, y1, w, h);
+                }
+            }
         }
 
         // adapted from https://onnxruntime.ai/docs/tutorials/web/classify-images-nextjs-github-template.html
@@ -49,7 +85,7 @@
 
             const float32Data = new Float32Array(dims[1] * dims[2] * dims[3]);
             for (i = 0; i < l; i++) {
-                float32Data[i] = transposedData[i] / 255.0;
+                float32Data[i] = (transposedData[i] - 127) / 128.0; // normalize to between -1 and 1
             }
 
             const inputTensor = new ort.Tensor("float32", float32Data, dims);
