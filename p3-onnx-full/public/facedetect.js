@@ -37,7 +37,6 @@ async function detectAndBlurFaces(image, blur = 0.1, padding = 0.1, threshold = 
         }
     }
     results = nms(results);
-    console.log(results);
 
     console.log("5. Blurring image...");
     const originalWidth = originalImage.bitmap.width;
@@ -62,12 +61,12 @@ async function detectAndBlurFaces(image, blur = 0.1, padding = 0.1, threshold = 
         const maxDim = Math.max(aw, ah);
         const blurRadius = maxDim * blur;
 
-        console.log(ax1, ay1, aw, ah, blurRadius);
-
         const blurredSection = originalImage.clone()
         blurredSection.crop(ax1, ay1, aw, ah).blur(Math.floor(blurRadius));
         originalImage.composite(blurredSection, ax1, ay1);
     }
+
+    console.log("6. Done!");
 
     return originalImage;
 }
