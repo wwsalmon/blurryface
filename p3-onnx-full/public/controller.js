@@ -1,6 +1,7 @@
 // check for dependencies
 if (typeof Jimp === "undefined") throw new Error("Jimp undefined. Make sure to import jimp.js before running ths script.");
 if (typeof detectAndBlurFaces === "undefined") throw new Error("detectAndBlurFaces undefined. Make sure to import facedetect.js before running this script");
+if (typeof window.__TAURI__ === "undefined") throw new Error("window.__TAURI__ undefined. Make sure to run this app through Tauri and enable global tauri in tauri.conf.json.");
 
 // MODEL
 // MODEL
@@ -37,6 +38,9 @@ const paddingSlider = document.getElementById("paddingSlider");
 const paddingReadout = document.getElementById("paddingReadout");
 const sensitivitySlider = document.getElementById("sensitivitySlider");
 const sensitivityReadout = document.getElementById("sensitivityReadout");
+
+// linkButton
+const linkButton = document.getElementById("linkButton");
 
 // CONTROLLER
 // CONTROLLER
@@ -122,4 +126,10 @@ sensitivitySlider.onchange = e => {
     sensitivity = e.target.value;
     sensitivityReadout.textContent = sensitivity + "%";
     updateBlurClick();
+}
+
+// linkButton
+const {open} = window.__TAURI__.shell;
+linkButton.onclick = () => {
+    open("https://github.com/wwsalmon/blurryface");
 }

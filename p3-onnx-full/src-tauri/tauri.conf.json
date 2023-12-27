@@ -19,6 +19,9 @@
       },
       "fs": {
         "writeFile": true
+      },
+      "shell": {
+        "open": "^https://github.com/*"
       }
     },
     "bundle": {
