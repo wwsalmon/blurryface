@@ -59,6 +59,7 @@ photoIn.onchange = e => {
     const src = URL.createObjectURL(file);
     const img = document.createElement("img");
     img.setAttribute("src", src);
+    inputPreview.innerHTML = "";
     inputPreview.appendChild(img);
 
     // update blur button
