@@ -9,3 +9,5 @@ p1-eel/dist
 
 p3-onnx-full/node_modules
 p3-onnx-full/.tmp
+p3-onnx-full/dist
+p3-onnx-full/neutralinojs.log

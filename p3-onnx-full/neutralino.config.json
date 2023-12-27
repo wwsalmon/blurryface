@@ -16,17 +16,12 @@
       "title": "Blurryface",
       "width": 800,
       "height": 500,
-      "minWidth": 400,
-      "minHeight": 200,
-      "fullScreen": false,
-      "alwaysOnTop": false,
+      "minWidth": 300,
+      "minHeight": 300,
       "icon": "/public/icon.png",
-      "enableInspector": true,
-      "borderless": false,
-      "maximize": false,
-      "hidden": false,
-      "resizable": true,
-      "exitProcessOnClose": false
+      "enableInspector": false,
+      "maximize": true,
+      "exitProcessOnClose": true
     },
     "chrome": {
       "width": 800,
