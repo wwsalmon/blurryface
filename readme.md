@@ -5,7 +5,7 @@ Prototype Windows/Mac OS app for automatically blurring faces in photos. It was 
 There are several prototype versions currently in the repository
 - P0: initial tests with Python scripts. MVP using RetinaFace
 - P1: functional but suboptimal (330 mb bundle, a bit slow) Python Eel desktop app, using RetinaFace
-- P2: onnxruntime-web and neutrino app, using UltraFace (modified RetinaFace)
+- P2: onnxruntime-web and Tauri, using UltraFace (modified RetinaFace)
 
 ## Dev notes
 

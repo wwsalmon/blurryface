@@ -8,6 +8,3 @@ p1-*/dist
 *.spec
 
 p3-*/node_modules
-p3-*/.tmp
-p3-*/dist
-p3-*/neutralinojs.log
