@@ -9,6 +9,10 @@ There are several prototype versions currently in the repository
 
 ## Dev notes
 
+### P3
+
+2023-12-26: used [https://github.com/microsoft/onnxruntime/blob/main/tools/python/remove_initializer_from_input.py](https://github.com/microsoft/onnxruntime/blob/main/tools/python/remove_initializer_from_input.py) on UltraFace .onnx file per [https://github.com/microsoft/onnxruntime/issues/4033](https://github.com/microsoft/onnxruntime/issues/4033) to get rid of a bunch of error messages. There were 244 before. 35 remain.
+
 ### P1
 
 Make venv then install packages with `pip install -r requirements.txt`. Update with `pip freeze > requirements.txt`

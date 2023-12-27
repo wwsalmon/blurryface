@@ -18,7 +18,7 @@ async function detectAndBlurFaces(image, blur = 0.1, padding = 0.1, threshold = 
     const imageTensor = imageToTensor(imageData);
 
     console.log("2. Initializing session...");
-    const session = await ort.InferenceSession.create("./version-RFB-640.onnx");
+    const session = await ort.InferenceSession.create("/ultraface-fixed.onnx");
 
     console.log("3. Running inference...");
     const output = await session.run({input: imageTensor});
