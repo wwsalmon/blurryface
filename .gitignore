@@ -2,12 +2,12 @@ sensitive-test-images
 .DS_Store
 
 # pyinstaller
-p1-eel/build
-p1-eel/dist
+p1-*/build
+p1-*/dist
 *.manifest
 *.spec
 
-p3-onnx-full/node_modules
-p3-onnx-full/.tmp
-p3-onnx-full/dist
-p3-onnx-full/neutralinojs.log
+p3-*/node_modules
+p3-*/.tmp
+p3-*/dist
+p3-*/neutralinojs.log
