@@ -6,3 +6,5 @@ p1-eel/build
 p1-eel/dist
 *.manifest
 *.spec
+
+p3-onnx-full/node_modules
