@@ -8,3 +8,4 @@ p1-eel/dist
 *.spec
 
 p3-onnx-full/node_modules
+p3-onnx-full/.tmp
