@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blurryface</title>
     <link rel="stylesheet" href="/style.css">
+    <script src="/ort.min.js"></script>
+    <script src="/jimp.min.js"></script>
+    <script src="/facedetect.js"></script>
 </head>
 <body>
     <div class="w-full flex h-screen text-center">
@@ -40,6 +43,7 @@
             <p id="outputLoading" class="hidden">Loading...</p>
             <div id="outputPreview">
             </div>
+            <button class="bg-tyellow hover:brightness-95 disabled:opacity-50 px-4 py-2 rounded font-bold mt-4" disabled id="downloadButton">Download</button>
         </div>
     </div>
     <script src="/controller.js"></script>
