@@ -88,13 +88,12 @@ function updateBlurClick() {
 
             // update download button
             downloadButton.disabled = false;
-            downloadButton.onclick = () => {
-                const downloadLink = document.createElement("a");
-                downloadLink.href = dataURL;
-                downloadLink.download = fileName + "_BLURRYFACE";
-                document.body.appendChild(downloadLink);
-                downloadLink.click();
-                downloadLink.remove();
+            downloadButton.onclick = async () => {
+                const {save} = window.__TAURI__.dialog;
+                const {writeBinaryFile} = window.__TAURI__.fs;
+                const defaultName = fileName + "_blurryface.jpg";
+                const filePath = await save({defaultPath: defaultName, filters: [{extensions: ["jpg"], name: "JPEG image"}]});
+                await writeBinaryFile(filePath, buffer);
             }
         } catch (e) {
             console.log(e);
