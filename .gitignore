@@ -1,5 +1,6 @@
 sensitive-test-images
 .DS_Store
+env.sh
 
 # pyinstaller
 p1-*/build

@@ -12,21 +12,42 @@ It:
 - runs on ONNX Runtime with WebAssembly backend, with an HTML/vanilla JS frontend via Tauri, so it's also really fast + lightweight
 - born out of the need to blur faces when publishing photos of protests, especially Palestine solidarity protests after Oct. 7, 2023.
 
-## Dev notes
+## Development instructions
 
-There are several prototype versions currently in the repository
+All source code for the released version of this app is in `p3-onnx-full`. It's a desktop app made using Tauri + Tailwind + HTML/vanilla JS.
+
+To setup:
+- install Rust
+- install Node/NPM
+- cd to `p3-onnx-full`. run `npm i` to install packages
+- run `npm run tw` to get Tailwind to update `/public/style.css` based on utility classes
+- run `npm run tauri dev` for dev
+
+To make changes:
+- edit `index.html` and `controller.js` in `/public` for app changes, `facedetect.js` for inference / pre/post-processing changes. If running Tauri in dev mode, it should hot refresh. If edit JS files, may need to refresh WebView manually to see changes
+
+To build:
+- run `npm run tauri build`
+- to code sign on Mac OS (make bundle runable on other computers), define the following environment variables (see [Tauri docs](https://tauri.app/v1/guides/distribution/sign-macos)) before running the above command:
+    - APPLE_CERTIFICATE_PASSWORD
+    - APPLE_SIGNING_IDENTITY
+    - APPLE_ID
+    - APPLE_PASSWORD
+    - APPLE_TEAM_ID
+
+## Other dev notes
+
+(misc. notes, docs for previous prototypes)
+
+There are several other prototype versions currently in the repository
 - P0: initial tests with Python scripts. MVP using RetinaFace
 - P1: functional but suboptimal (330 mb bundle, a bit slow) Python Eel desktop app, using RetinaFace
 - P2: onnxruntime-web prototype with straightforward HTML/CSS/JS, using UltraFace (modified RetinaFace)
-- P3: onnxruntime-web and Tauri.
+- P3: onnxruntime-web and Tauri
 
 ### P3
 
-Desktop app made using Tauri + Tailwind + HTML/vanilla JS. Tried Neutralino but had some bundling issues, and Tauri APIs were really useful anyways.
-
-To run, make sure Rust is installed, also `npm i`, then cd to `p3-onnx-full` and run `npm run tauri dev` for dev, `npm run tauri build` for build. I need to figure out the build commands and publishing pipeline a good bit better...once upon a time I did for [Interview Manager](https://github.com/wwsalmon/interview-manager) and I guess I'll set up a similar CI/CD pipeline if I continue development. In the meantime I'm just building on Windows and Mac OS machines separately and publishing the .exe/app bundle together.
-
-For Tailwind, cd to `p3-onnx-full` then run `npm run tw` to make sure new utility classes and changes to `src/style.css` make it to `public/style.css`.
+2023-12-27: Tried Neutralino but had some bundling issues, and Tauri APIs were really useful anyways.
 
 2023-12-26: used [https://github.com/microsoft/onnxruntime/blob/main/tools/python/remove_initializer_from_input.py](https://github.com/microsoft/onnxruntime/blob/main/tools/python/remove_initializer_from_input.py) on UltraFace .onnx file per [https://github.com/microsoft/onnxruntime/issues/4033](https://github.com/microsoft/onnxruntime/issues/4033) to get rid of a bunch of error messages. There were 244 before. 35 remain.
 
