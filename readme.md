@@ -28,12 +28,13 @@ To make changes:
 
 To build:
 - run `npm run tauri build`
-- to code sign on Mac OS (make bundle runable on other computers), define the following environment variables (see [Tauri docs](https://tauri.app/v1/guides/distribution/sign-macos)) before running the above command:
-    - APPLE_CERTIFICATE_PASSWORD
-    - APPLE_SIGNING_IDENTITY
-    - APPLE_ID
-    - APPLE_PASSWORD
-    - APPLE_TEAM_ID
+- to code sign on Mac OS (make bundle runable on other computers), follow [Tauri docs](https://tauri.app/v1/guides/distribution/sign-macos) to create and install a certificate, then define the following environment variables (`export VARIABLE=VALUE` in terminal):
+    - `APPLE_CERTIFICATE_PASSWORD`
+    - `APPLE_SIGNING_IDENTITY`
+    - `APPLE_ID`
+    - `APPLE_PASSWORD`
+    - `APPLE_TEAM_ID`
+    - For CI (ex. GitHub actions) you also need `APPLE_CERTIFICATE`, a base64 string of the certificate (see docs linked above). If you install the certificate on your computer, you don't need this variable, the builder will find the certificate using the signing identity.
 
 ## Other dev notes
 
