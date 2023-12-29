@@ -41,8 +41,29 @@ async function detectAndBlurFaces(image, blur = 0.1, padding = 0.1, threshold = 
     console.log("5. Blurring image...");
     const originalWidth = originalImage.bitmap.width;
     const originalHeight = originalImage.bitmap.height;
+
+    const startTime = Date.now();
+    let checkpoint = Date.now();
+
+    // create canvas for mask
+    console.log("5a. Creating canvas");
+    const maskCanvas = document.createElement("canvas");
+    maskCanvas.width = originalWidth;
+    maskCanvas.height = originalHeight;
+    const maskCtx = maskCanvas.getContext("2d");
+    maskCtx.fillStyle = "black"; // fill entire canvas with black
+    maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
+    maskCtx.fillStyle = "white"; // prepare to draw white masks for faces
+
+    let maxDim = 0;
+    let i = 0;
+
+    checkpoint = reportElapsedTime(checkpoint);
+
+    console.log("5b. Drawing mask");
     
-    for (let result of results) {        
+    for (let result of results) {
+        i++;
         // scale model output coordinates, get width and height
         const x1 = result.box[0] * originalWidth;
         const x2 = result.box[2] * originalWidth;
@@ -51,20 +72,43 @@ async function detectAndBlurFaces(image, blur = 0.1, padding = 0.1, threshold = 
         const y2 = result.box[3] * originalHeight;
         const h = y2 - y1;
 
+        if (w > maxDim) maxDim = w;
+        if (h > maxDim) maxDim = h;
+
         // add in padding
         const ax1 = Math.max(0, x1 - padding * w);
         const aw = Math.min(originalWidth, w * (1 + 2 * padding));
         const ay1 = Math.max(0, y1 - padding * h);
         const ah = Math.min(originalHeight, h * (1 + 2 * padding));
 
-        // blur
-        const maxDim = Math.max(aw, ah);
-        const blurRadius = maxDim * blur;
-
-        const blurredSection = originalImage.clone()
-        blurredSection.crop(ax1, ay1, aw, ah).blur(Math.floor(blurRadius));
-        originalImage.composite(blurredSection, ax1, ay1);
+        maskCtx.fillRect(ax1, ay1, aw, ah);
     }
+
+    checkpoint = reportElapsedTime(checkpoint);
+
+    console.log("5c. Creating blurred copy");
+
+    const blurredImage = originalImage.clone();
+    const blurRadius = Math.floor(maxDim * blur);
+    blurredImage.blur(blurRadius);
+
+    checkpoint = reportElapsedTime(checkpoint);
+
+    console.log("5d. Masking blurred copy");
+
+    const maskData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height).data;
+    const maskJimp = await Jimp.read(maskCanvas.width, maskCanvas.height);
+    maskJimp.bitmap.data = Buffer.from(maskData);
+
+    checkpoint = reportElapsedTime(checkpoint);
+
+    console.log("5e. Compositing");
+
+    blurredImage.mask(maskJimp);
+    originalImage.composite(blurredImage, 0, 0);
+
+    checkpoint = reportElapsedTime(checkpoint);
+    console.log(`Total time elasped: ${Date.now() - startTime}ms`);
 
     console.log("6. Done!");
 
@@ -137,4 +181,9 @@ function nms(results, iouThreshold = 0.3) {
     }
 
     return keep;
+}
+
+function reportElapsedTime(checkpoint) {
+    console.log(`Elapsed: ${Date.now() - checkpoint}ms`);
+    return Date.now();
 }
