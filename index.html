@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blurryface | Blur faces in one click</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="px-4 text-center">
+        <img src="./img/logo.png" alt="Blurryface logo" class="h-6 sm:h-8 mx-auto block mt-4 mb-12 sm:mb-16">
+        <h1 class="font-bold text-3xl sm:text-5xl leading-[1.1] mb-4">Blur faces in photos in one click</h1>
+        <p class="sm:text-xl">On-device/offline face blurring app. Free and <a href="https://github.com/wwsalmon/blurryface" class="underline">open source</a>.</p>
+        <div class="my-8 sm:my-12">
+            <a href="https://github.com/wwsalmon/blurryface/releases" class="font-mono sm:text-xl px-4 py-3 font-bold bg-accent hover:shadow hover:brightness-90 inline-block">Download for Windows or Mac</a>
+        </div>
+        <a class="flex items-center justify-center my-8 gap-4 sm:gap-6 opacity-50 hover:opacity-100" href="https://shutitdown4palestine.org/">
+            <img src="./img/organizers.png" alt="Shut it down for Palestine logo" class="h-8 sm:h-12">
+            <p class="font-mono text-sm sm:text-base text-left">Created by organizers, for organizers</p>
+        </a>
+        <img src="./img/screenshot.jpg" alt="Screenshot of Blurryface app" class="w-full max-w-5xl block mx-auto shadow-xl mb-24">
+        <div class="prose prose-neutral max-w-lg w-full mx-auto text-left border-t pt-8 mt-8 mb-32">
+            <h2>FAQ</h2>
+            <h3>How does it work?</h3>
+            <p>To automatically detect where faces are in a photo, Blurryface uses a face detection model called <a href="https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB">UltraFace</a>, based off of a state-of-the-art model called <a href="https://paperswithcode.com/paper/190500641">RetinaFace</a>. Specifically, it uses an <a href="https://github.com/onnx/models/tree/main/validated/vision/body_analysis/ultraface">implementation of UltraFace in a framework called ONNX</a>, which it then runs in the app using WebAssembly through <code>onnxruntime-web</code>.</p>
+            <p>Blurryface then uses a Javascript library called <a href="https://github.com/jimp-dev/jimp">Jimp</a> to blur the faces in the photo.</p>
+            <h3>Are my photos uploaded to a server?</h3>
+            <p><b>No, nothing is uploaded to or downloaded from the internet when running Blurryface.</b> The face detection model runs entirely on your computer. The entire model runtime and weights are <a href="https://github.com/wwsalmon/blurryface/tree/main/p3-onnx-full/public">bundled with the app itself</a>.</p>
+            <h3>Can I request new features in the app?</h3>
+            <p><b>Yes, email me at <a href="mailto:hello@samsonzhang.com">hello@samsonzhang.com</a> with feedback.</b> I will not be working on this app consistently, but if I can I want to make this app useful for organizers, movement journalists, and others handling sensitive photos.</p>
+            <p>If you are a developer (especially with web development experience, as this app is built using web technologies and Tauri), please also feel free to <a href="https://github.com/wwsalmon/blurryface/issues">leave an issue on GitHub or open a pull request</a> if you want to implement something yourself. It's a pretty straightforward app so far and I've written developer documentation in the repo.</p>
+            <h3>Who are you? Why did you make this app?</h3>
+            <p>I'm a <a href="https://twitter.com/wwsalmon">student journalist</a> who has had to do a lot of blurring of photos and videos manually <a href="https://www.instagram.com/claremont.undercurrents/">when covering Palestine solidarity actions</a>. Other organizers and journalists have often reached out to me asking how I blur faces in my photos. Many people don't have access to or aren't comfortable with tools like Photoshop, and blurring photos manually can be time-intensive, so I thought there was a need for a tool like this.</p>
+            <p>Other student-organizer-developers have also contributed to the development of this app, and <a href="https://github.com/wwsalmon/blurryface">you can too if you have web development experience!</a></p>
+        </div>
+    </div>
+</body>
+</html>
