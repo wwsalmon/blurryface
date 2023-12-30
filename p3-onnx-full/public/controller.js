@@ -28,6 +28,7 @@ const containerOutput = document.getElementById("containerOutput");
 const triggerBlur = document.getElementById("triggerBlur");
 const outputPreview = document.getElementById("outputPreview");
 const outputLoading = document.getElementById("outputLoading");
+const errorMessage = document.getElementById("errorMessage");
 const downloadButton = document.getElementById("downloadButton");
 
 
@@ -74,6 +75,7 @@ function updateBlurClick() {
         outputPreview.innerHTML = "";
         blurredPhoto = null;
         downloadButton.disabled = true;
+        errorMessage.innerHTML = "";
 
         // enter loading state
         triggerBlur.disabled = true;
@@ -101,6 +103,7 @@ function updateBlurClick() {
                 await writeBinaryFile(filePath, buffer);
             }
         } catch (e) {
+            errorMessage.innerHTML = e;
             console.log(e);
         }
 
