@@ -37,6 +37,9 @@ async function detectAndBlurFaces(image, blur = 0.1, padding = 0.1, threshold = 
         }
     }
     results = nms(results);
+    if (results.length == 0){
+        throw new Error("No faces detected")
+    }
 
     console.log("5. Blurring image...");
     const originalWidth = originalImage.bitmap.width;
