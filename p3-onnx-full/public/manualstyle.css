@@ -1,0 +1,18 @@
+.box {
+    position: absolute;
+    border: solid 4px lime;
+}
+
+.box:hover {
+    border: solid 4px blue;
+    cursor: move
+}
+
+.box {
+    resize: both;
+}
+
+.box:focus {
+    outline: dashed 2px black;
+    outline-offset: 4px;
+}

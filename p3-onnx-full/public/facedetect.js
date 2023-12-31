@@ -9,6 +9,116 @@ ort.env.wasm.wasmPaths = {
     "ort-wasm-simd-threaded.wasm": "/ort-wasm-simd-threaded.wasm",
 };
 
+async function detectFaces(image, threshold = 0.5) {
+    console.log("1. Pre-processing image...");
+    const originalImage = image.clone(); // save for blurring later
+    image.resize(640, 480);
+    const imageData = image.bitmap.data; // rgba array
+    const imageTensor = imageToTensor(imageData);
+
+    console.log("2. Initializing session...");
+    const session = await ort.InferenceSession.create("/ultraface-fixed.onnx");
+
+    console.log("3. Running inference...");
+    const output = await session.run({input: imageTensor});
+
+    console.log("4. Processing output...");
+    const allScores = output.scores.data;
+    const allBoxes = output.boxes.data;
+    let results = [];
+    for (let i = 0; i < allScores.length / 2; i ++) {
+        const scoreIndex = 2 * i + 1;
+        const thisScore = allScores[scoreIndex];
+        if (thisScore > threshold) {
+            const thisBox = [allBoxes[4 * i], allBoxes[4 * i + 1], allBoxes[4 * i + 2], allBoxes[4 * i + 3]];
+            const thisResult = {score: thisScore, box: thisBox};
+            results.push(thisResult);
+        }
+    }
+    results = nms(results);
+    return results.map((result) => result.box)
+}
+
+async function blurFaces(image, boundingBoxes, blur = 0.1, padding = 0) {
+    const originalImage = image.clone(); // save for blurring later
+
+    console.log("5. Blurring image...");
+    const originalWidth = originalImage.bitmap.width;
+    const originalHeight = originalImage.bitmap.height;
+
+    const startTime = Date.now();
+    let checkpoint = Date.now();
+
+
+    // create canvas for mask
+    console.log("5a. Creating canvas");
+    const maskCanvas = document.createElement("canvas");
+    maskCanvas.width = originalWidth;
+    maskCanvas.height = originalHeight;
+    const maskCtx = maskCanvas.getContext("2d");
+    maskCtx.fillStyle = "black"; // fill entire canvas with black
+    maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
+    maskCtx.fillStyle = "white"; // prepare to draw white masks for faces
+
+    let maxDim = 0;
+
+    checkpoint = reportElapsedTime(checkpoint);
+
+    console.log("5b. Drawing mask");
+    
+    for (let box of boundingBoxes) {
+        // scale model output coordinates, get width and height
+        const x1 = box[0] * originalWidth;
+        const x2 = box[2] * originalWidth;
+        const w = x2 - x1;
+        const y1 = box[1] * originalHeight;
+        const y2 = box[3] * originalHeight;
+        const h = y2 - y1;
+        console.log("HEYY" , w,h)
+
+        if (w > maxDim) maxDim = w;
+        if (h > maxDim) maxDim = h;
+
+        // add in padding
+        const ax1 = Math.max(0, x1 - padding * w);
+        const aw = Math.min(originalWidth, w * (1 + 2 * padding));
+        const ay1 = Math.max(0, y1 - padding * h);
+        const ah = Math.min(originalHeight, h * (1 + 2 * padding));
+
+        maskCtx.fillRect(ax1, ay1, aw, ah);
+    }
+
+    checkpoint = reportElapsedTime(checkpoint);
+
+    console.log("5c. Creating blurred copy");
+
+    const blurredImage = originalImage.clone();
+    const blurRadius = Math.floor(maxDim * blur);
+    blurredImage.blur(blurRadius);
+
+    checkpoint = reportElapsedTime(checkpoint);
+
+    console.log("5d. Masking blurred copy");
+
+    const maskData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height).data;
+    const maskJimp = await Jimp.read(maskCanvas.width, maskCanvas.height);
+    maskJimp.bitmap.data = Buffer.from(maskData);
+
+    checkpoint = reportElapsedTime(checkpoint);
+
+    console.log("5e. Compositing");
+
+    blurredImage.mask(maskJimp);
+    originalImage.composite(blurredImage, 0, 0);
+
+    checkpoint = reportElapsedTime(checkpoint);
+    console.log(`Total time elasped: ${Date.now() - startTime}ms`);
+
+    console.log("6. Done!");
+
+    return originalImage;
+}
+
 // takes in JIMP image object, returns a JIMP image object
 async function detectAndBlurFaces(image, blur = 0.1, padding = 0.1, threshold = 0.5) {
     console.log("1. Pre-processing image...");
@@ -40,6 +150,7 @@ async function detectAndBlurFaces(image, blur = 0.1, padding = 0.1, threshold = 
     if (results.length == 0){
         throw new Error("No faces detected");
     }
+    console.log(results)
 
     console.log("5. Blurring image...");
     const originalWidth = originalImage.bitmap.width;
@@ -47,6 +158,7 @@ async function detectAndBlurFaces(image, blur = 0.1, padding = 0.1, threshold = 
 
     const startTime = Date.now();
     let checkpoint = Date.now();
+
 
     // create canvas for mask
     console.log("5a. Creating canvas");
@@ -66,6 +178,7 @@ async function detectAndBlurFaces(image, blur = 0.1, padding = 0.1, threshold = 
     console.log("5b. Drawing mask");
     
     for (let result of results) {
+        console.log(result)
         i++;
         // scale model output coordinates, get width and height
         const x1 = result.box[0] * originalWidth;

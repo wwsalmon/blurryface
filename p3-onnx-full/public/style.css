@@ -492,6 +492,9 @@ video {
   --tw-backdrop-saturate:  ;
   --tw-backdrop-sepia:  ;
 }
+.relative {
+  position: relative;
+}
 .mx-auto {
   margin-left: auto;
   margin-right: auto;
@@ -534,6 +537,11 @@ video {
 .max-w-sm {
   max-width: 24rem;
 }
+.select-none {
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+}
 .rounded {
   border-radius: 0.25rem;
 }
@@ -547,6 +555,14 @@ video {
 .bg-white {
   --tw-bg-opacity: 1;
   background-color: rgb(255 255 255 / var(--tw-bg-opacity));
+}
+.bg-gray-400 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(156 163 175 / var(--tw-bg-opacity));
+}
+.bg-gray-300 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(209 213 219 / var(--tw-bg-opacity));
 }
 .p-4 {
   padding: 1rem;
