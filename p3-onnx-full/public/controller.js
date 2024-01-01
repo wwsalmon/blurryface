@@ -184,7 +184,7 @@ function mouseDownHandler (event) {
     const clickPos = getPosWithinElement(event.currentTarget, event);
     startX = clickPos[0];
     startY = clickPos[1];
-    
+
     event.currentTarget.appendChild(newBox);
 }
 
@@ -196,9 +196,9 @@ function mouseMoveHandler(event) {
     endY = mousePos[1];
 
     if (draggedBox){
-        console.log("moving!", endX, endY);
-        draggedBox.style.left = (initialLeft + endX - startX) + "px";
-        draggedBox.style.top = (initialTop + endY - startY) + "px";
+        // the min & max functions make sure boxes stay within bounds of image
+        draggedBox.style.left = Math.min(Math.max(0, (initialLeft + endX - startX)), outputPreviewImg.width - convertPxStringToInt(draggedBox.style.width)) + "px";
+        draggedBox.style.top = Math.min(Math.max(0, (initialTop + endY - startY)), outputPreviewImg.height - convertPxStringToInt(draggedBox.style.height)) + "px";
         return;
     }
 
