@@ -14,7 +14,15 @@ let fileName = null;
 let file = null;
 let blurredPhoto = null;
 let outputPreviewImg = null;
-let results = [];
+let boundingBoxes = [];
+let startX = 0;
+let startY = 0;
+let endX = 0;
+let endY = 0;
+let newBox = null;
+let draggedBox = null;
+let initialLeft = 0;
+let initialTop = 0;
 
 // VIEW
 // VIEW
@@ -34,9 +42,9 @@ const errorMessage = document.getElementById("errorMessage");
 const mainButtonRow = document.getElementById("mainButtonRow")
 const downloadButton = document.getElementById("downloadButton");
 const editButton = document.getElementById("editButton");
-const editingButtonRow = document.getElementById("editingButtonRow")
-const cancelButton = document.getElementById("cancelButton")
-const saveEditsButton = document.getElementById("saveEditsButton")
+const editingButtonRow = document.getElementById("editingButtonRow");
+const cancelButton = document.getElementById("cancelButton");
+const saveEditsButton = document.getElementById("saveEditsButton");
 
 // sliders
 const blurSlider = document.getElementById("blurSlider");
@@ -91,17 +99,16 @@ function updateBlurClick() {
         try {
             const imageBuffer = await file.arrayBuffer();
             const imageJimp = await Jimp.read(imageBuffer);
-            results = await detectFaces(imageJimp, (100 - sensitivity) / 100)
-            blurredPhoto = await blurFaces(imageJimp, results, blurAmount / 100, padding / 100);
+            boundingBoxes = await detectFaces(imageJimp, (100 - sensitivity) / 100);
+            blurredPhoto = await blurFaces(imageJimp, boundingBoxes, blurAmount / 100, padding / 100);
         
             // update view
             outputPreviewImg = document.createElement("img");
             const buffer = await blurredPhoto.getBufferAsync(Jimp.MIME_JPEG);
             const dataURL = "data:image/jpeg;base64," + buffer.toString("base64");
-            outputPreviewImg.src = dataURL
+            outputPreviewImg.src = dataURL;
             outputPreviewImg.setAttribute("draggable", false);
             outputPreviewImg.classList.add("select-none");
-
             outputPreview.appendChild(outputPreviewImg);
 
             // update download button
@@ -151,52 +158,38 @@ linkButton.onclick = () => {
     open("https://github.com/wwsalmon/blurryface");
 }
 
-let startX = 0
-let startY = 0
-let endX = 0
-let endY = 0
-let box = null;    
-let draggedBox = null
-let initialLeft = 0
-let initialTop = 0
-let offsetLeft = 0
-let offsetTop = 0
-
 function getPosWithinElement(element, event) {
     const rect = element.getBoundingClientRect();
     return [event.clientX - rect.left, event.clientY - rect.top]  // [x, y]
 }
 
 function mouseDownHandler (event) {
+    // prepare to move existing box
     if (event.target.className == "box"){
-        
         draggedBox = event.target
         const clickPos = getPosWithinElement(event.currentTarget, event);
         startX = clickPos[0]; 
         startY = clickPos[1];
-
         initialLeft = parseInt(draggedBox.style.left.substring(0, draggedBox.style.left.length - 2));
         initialTop = parseInt(draggedBox.style.top.substring(0, draggedBox.style.left.length - 2));
-        
         return;
     }
-
-    // creating new bounding box
-    box = document.createElement("div")
-    box.classList.add("box")
-    box.setAttribute("tabindex", 0)
-    box.style.width = '0px';
-    box.style.height = '0px';
+    // creating new box
+    newBox = document.createElement("div");
+    newBox.classList.add("box");
+    newBox.setAttribute("tabindex", 0) // make focusable
+    newBox.style.width = '0px';
+    newBox.style.height = '0px';
 
     const clickPos = getPosWithinElement(event.currentTarget, event);
-    startX = clickPos[0]
-    startY = clickPos[1]
-
-    event.currentTarget.appendChild(box)
+    startX = clickPos[0];
+    startY = clickPos[1];
+    
+    event.currentTarget.appendChild(newBox);
 }
 
-function mouseMoveHandler (event) {
-    if (!box && !draggedBox) return;
+function mouseMoveHandler(event) {
+    if (!newBox && !draggedBox) return;
 
     const mousePos = getPosWithinElement(event.currentTarget, event);
     endX = mousePos[0];
@@ -209,30 +202,31 @@ function mouseMoveHandler (event) {
         return;
     }
 
-    box.style.width = Math.abs(endX - startX) + 'px';
-    box.style.height = Math.abs(endY - startY) + 'px';
-    box.style.left = (endX - startX < 0) ? endX + 'px' : startX + 'px';
-    box.style.top = (endY - startY < 0) ? endY + 'px' : startY + 'px';
+    newBox.style.width = Math.abs(endX - startX) + 'px';
+    newBox.style.height = Math.abs(endY - startY) + 'px';
+    newBox.style.left = (endX - startX < 0) ? endX + 'px' : startX + 'px';
+    newBox.style.top = (endY - startY < 0) ? endY + 'px' : startY + 'px';
 }
 
 
-function mouseUpHandler (event) {
-    if (!box && !draggedBox) return;
-    box = null;
+function mouseUpHandler(event) {
+    if (!newBox && !draggedBox) return;
+
+    newBox = null;
     draggedBox = null;
-    startX = 0
-    startY = 0
-    endX = 0
-    endY = 0
+    startX = 0;
+    startY = 0;
+    endX = 0;
+    endY = 0;
 }
 
-function drawBoxesOnDetectedFaces(){
-    for (let result of results) {
-        const x1 = result[0] * outputPreviewImg.width;
-        const x2 = result[2] * outputPreviewImg.width;
+function drawBoxesOnDetectedFaces() {
+    for (let box of boundingBoxes) {
+        const x1 = box[0] * outputPreviewImg.width;
+        const x2 = box[2] * outputPreviewImg.width;
         const w = x2 - x1;
-        const y1 = result[1] * outputPreviewImg.height;
-        const y2 = result[3] * outputPreviewImg.height;
+        const y1 = box[1] * outputPreviewImg.height;
+        const y2 = box[3] * outputPreviewImg.height;
         const h = y2 - y1;
 
         // add in padding
@@ -241,16 +235,16 @@ function drawBoxesOnDetectedFaces(){
         const ay1 = Math.max(0, y1 - (padding/100) * h);
         const ah = Math.min(outputPreviewImg.height, h * (1 + 2 * (padding/100)));
 
-        box = document.createElement("div")
-        box.classList.add("box")
-        box.setAttribute("tabindex", 0)
+        newBox = document.createElement("div");
+        newBox.classList.add("box");
+        newBox.setAttribute("tabindex", 0);
 
-        box.style.width = aw + 'px';
-        box.style.height = ah + 'px';
-        box.style.left = ax1 + "px"
-        box.style.top = ay1 + "px"
-        outputPreview.appendChild(box)
-        box = null
+        newBox.style.width = aw + 'px';
+        newBox.style.height = ah + 'px';
+        newBox.style.left = ax1 + "px";
+        newBox.style.top = ay1 + "px";
+        outputPreview.appendChild(newBox);
+        newBox = null;
     }
 }
 
@@ -289,17 +283,14 @@ cancelButton.onclick = async () => {
     outputPreview.removeEventListener("mouseup", mouseUpHandler);
     outputPreview.removeEventListener("keydown", keyDownHandler);
 
-    editingButtonRow.classList.add("hidden")
-    mainButtonRow.classList.remove("hidden")
+    editingButtonRow.classList.add("hidden");
+    mainButtonRow.classList.remove("hidden");
 }
 
 saveEditsButton.onclick = async () => {
-    const boxes = document.getElementsByClassName("box");
-    const boxCoords = convertBoxes(boxes);
-
+    saveBoxPositions();
     outputPreview.innerHTML=""
     outputLoading.classList.remove("hidden");
-
     outputPreview.style.cursor = "default";
     outputPreview.removeEventListener("mousedown", mouseDownHandler);
     outputPreview.removeEventListener("mousemove", mouseMoveHandler);
@@ -310,7 +301,7 @@ saveEditsButton.onclick = async () => {
     try {
         const imageBuffer = await file.arrayBuffer();
         const imageJimp = await Jimp.read(imageBuffer);
-        blurredPhoto = await blurFaces(imageJimp, boxCoords, blurAmount/100, padding/100);
+        blurredPhoto = await blurFaces(imageJimp, boundingBoxes, blurAmount/100, padding/100);
     
         outputPreviewImg = document.createElement("img");
         const buffer = await blurredPhoto.getBufferAsync(Jimp.MIME_JPEG);
@@ -329,8 +320,8 @@ saveEditsButton.onclick = async () => {
             const filePath = await save({defaultPath: defaultName, filters: [{extensions: ["jpg"], name: "JPEG image"}]});
             await writeBinaryFile(filePath, buffer);
         }
-        editingButtonRow.classList.add("hidden")
-        mainButtonRow.classList.remove("hidden")
+        editingButtonRow.classList.add("hidden");
+        mainButtonRow.classList.remove("hidden");
     }
     catch (e) {
         errorMessage.innerHTML = e;
@@ -339,7 +330,7 @@ saveEditsButton.onclick = async () => {
     outputLoading.classList.add("hidden");
 }
 
-function keyDownHandler (event) {
+function keyDownHandler(event) {
     if (event.key === 'Delete' || event.key === 'Backspace') {
         if (document.activeElement.className === 'box'){
             document.activeElement.remove();
@@ -347,20 +338,18 @@ function keyDownHandler (event) {
     }
 }
 
-function convertBoxes(boxes){
-    results = []
+function saveBoxPositions() {
+    boundingBoxes = []
+    const boxes = document.getElementsByClassName("box");
     for (let box of boxes){
-        const width = convertPxStringToInt(box.style.width)
-        const height = convertPxStringToInt(box.style.height)
-
-        const left = convertPxStringToInt(box.style.left) 
-        const right = convertPxStringToInt(box.style.left) + width
-        const top = convertPxStringToInt(box.style.top)
-        const bottom= convertPxStringToInt(box.style.top) + height
-        
-        results.push([left / outputPreviewImg.width, top / outputPreviewImg.height, right / outputPreviewImg.width, bottom / outputPreviewImg.height])
+        const width = convertPxStringToInt(box.style.width);
+        const height = convertPxStringToInt(box.style.height);
+        const left = convertPxStringToInt(box.style.left);
+        const right = convertPxStringToInt(box.style.left) + width;
+        const top = convertPxStringToInt(box.style.top);
+        const bottom= convertPxStringToInt(box.style.top) + height;
+        boundingBoxes.push([left / outputPreviewImg.width, top / outputPreviewImg.height, right / outputPreviewImg.width, bottom / outputPreviewImg.height]);
     }
-    return results 
 }
 
 function convertPxStringToInt (str) {

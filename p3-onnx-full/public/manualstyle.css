@@ -5,7 +5,7 @@
 
 .box:hover {
     border: solid 4px blue;
-    cursor: move
+    cursor: move;
 }
 
 .box {

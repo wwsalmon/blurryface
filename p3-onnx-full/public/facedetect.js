@@ -150,7 +150,6 @@ async function detectAndBlurFaces(image, blur = 0.1, padding = 0.1, threshold = 
     if (results.length == 0){
         throw new Error("No faces detected");
     }
-    console.log(results)
 
     console.log("5. Blurring image...");
     const originalWidth = originalImage.bitmap.width;
@@ -158,7 +157,6 @@ async function detectAndBlurFaces(image, blur = 0.1, padding = 0.1, threshold = 
 
     const startTime = Date.now();
     let checkpoint = Date.now();
-
 
     // create canvas for mask
     console.log("5a. Creating canvas");
@@ -178,7 +176,6 @@ async function detectAndBlurFaces(image, blur = 0.1, padding = 0.1, threshold = 
     console.log("5b. Drawing mask");
     
     for (let result of results) {
-        console.log(result)
         i++;
         // scale model output coordinates, get width and height
         const x1 = result.box[0] * originalWidth;
