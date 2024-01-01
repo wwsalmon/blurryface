@@ -159,9 +159,53 @@ linkButton.onclick = () => {
     open("https://github.com/wwsalmon/blurryface");
 }
 
+// returns [x, y] relative to given element
 function getPosWithinElement(element, event) {
     const rect = element.getBoundingClientRect();
-    return [event.clientX - rect.left, event.clientY - rect.top]  // [x, y]
+    return [event.clientX - rect.left, event.clientY - rect.top];
+}
+
+// converts positions into DOM element boxes
+function drawBoxesOnDetectedFaces() {
+    for (let box of boundingBoxes) {
+        const x1 = box[0] * outputPreviewImg.width;
+        const x2 = box[2] * outputPreviewImg.width;
+        const w = x2 - x1;
+        const y1 = box[1] * outputPreviewImg.height;
+        const y2 = box[3] * outputPreviewImg.height;
+        const h = y2 - y1;
+
+        // add in padding
+        const ax1 = Math.max(0, x1 - (padding/100) * w);
+        const aw = Math.min(outputPreviewImg.width, w * (1 + 2 * (padding/100)));
+        const ay1 = Math.max(0, y1 - (padding/100) * h);
+        const ah = Math.min(outputPreviewImg.height, h * (1 + 2 * (padding/100)));
+
+        newBox = document.createElement("div");
+        newBox.classList.add("box");
+        newBox.setAttribute("tabindex", 0);
+        newBox.style.width = aw + 'px';
+        newBox.style.height = ah + 'px';
+        newBox.style.left = ax1 + "px";
+        newBox.style.top = ay1 + "px";
+        outputPreview.appendChild(newBox);
+        newBox = null;
+    }
+}
+
+// converts DOM element boxes into positions
+function saveBoxPositions() {
+    boundingBoxes = []
+    const boxes = document.getElementsByClassName("box");
+    for (let box of boxes){
+        const width = convertPxStringToInt(box.style.width);
+        const height = convertPxStringToInt(box.style.height);
+        const left = convertPxStringToInt(box.style.left);
+        const right = convertPxStringToInt(box.style.left) + width;
+        const top = convertPxStringToInt(box.style.top);
+        const bottom= convertPxStringToInt(box.style.top) + height;
+        boundingBoxes.push([left / outputPreviewImg.width, top / outputPreviewImg.height, right / outputPreviewImg.width, bottom / outputPreviewImg.height]);
+    }
 }
 
 function mouseDownHandler (event) {
@@ -175,10 +219,10 @@ function mouseDownHandler (event) {
         initialTop = parseInt(draggedBox.style.top.substring(0, draggedBox.style.left.length - 2));
         return;
     }
-    // creating new box
+    // start drawing a new box
     newBox = document.createElement("div");
     newBox.classList.add("box");
-    newBox.setAttribute("tabindex", 0) // make focusable
+    newBox.setAttribute("tabindex", 0); // make focusable
     newBox.style.width = '0px';
     newBox.style.height = '0px';
 
@@ -209,10 +253,8 @@ function mouseMoveHandler(event) {
     newBox.style.top = (endY - startY < 0) ? endY + 'px' : startY + 'px';
 }
 
-
 function mouseUpHandler(event) {
     if (!newBox && !draggedBox) return;
-
     newBox = null;
     draggedBox = null;
     startX = 0;
@@ -221,31 +263,11 @@ function mouseUpHandler(event) {
     endY = 0;
 }
 
-function drawBoxesOnDetectedFaces() {
-    for (let box of boundingBoxes) {
-        const x1 = box[0] * outputPreviewImg.width;
-        const x2 = box[2] * outputPreviewImg.width;
-        const w = x2 - x1;
-        const y1 = box[1] * outputPreviewImg.height;
-        const y2 = box[3] * outputPreviewImg.height;
-        const h = y2 - y1;
-
-        // add in padding
-        const ax1 = Math.max(0, x1 - (padding/100) * w);
-        const aw = Math.min(outputPreviewImg.width, w * (1 + 2 * (padding/100)));
-        const ay1 = Math.max(0, y1 - (padding/100) * h);
-        const ah = Math.min(outputPreviewImg.height, h * (1 + 2 * (padding/100)));
-
-        newBox = document.createElement("div");
-        newBox.classList.add("box");
-        newBox.setAttribute("tabindex", 0);
-
-        newBox.style.width = aw + 'px';
-        newBox.style.height = ah + 'px';
-        newBox.style.left = ax1 + "px";
-        newBox.style.top = ay1 + "px";
-        outputPreview.appendChild(newBox);
-        newBox = null;
+function keyDownHandler(event) {
+    if (event.key === 'Delete' || event.key === 'Backspace') {
+        if (document.activeElement.className === 'box'){
+            document.activeElement.remove();
+        }
     }
 }
 
@@ -271,7 +293,6 @@ cancelButton.onclick = async () => {
     const buffer = await blurredPhoto.getBufferAsync(Jimp.MIME_JPEG);
     const dataURL = "data:image/jpeg;base64," + buffer.toString("base64");
     outputPreviewImg.src = dataURL;
-    
     outputPreviewImg.setAttribute("draggable", false);
     outputPreviewImg.classList.add("select-none");
     outputPreviewImg.onload = function () {
@@ -303,7 +324,6 @@ saveEditsButton.onclick = async () => {
     outputPreview.removeEventListener("mouseup", mouseUpHandler);
     outputPreview.removeEventListener("keydown", keyDownHandler);
 
-    
     try {
         const imageBuffer = await file.arrayBuffer();
         const imageJimp = await Jimp.read(imageBuffer);
@@ -328,35 +348,12 @@ saveEditsButton.onclick = async () => {
         }
         editingButtonRow.classList.add("hidden");
         mainButtonRow.classList.remove("hidden");
-    }
-    catch (e) {
+    } catch (e) {
         errorMessage.innerHTML = e;
         saveEditsButton.classList.add("hidden");
         console.log(e);
     }
     outputLoading.classList.add("hidden");
-}
-
-function keyDownHandler(event) {
-    if (event.key === 'Delete' || event.key === 'Backspace') {
-        if (document.activeElement.className === 'box'){
-            document.activeElement.remove();
-        }
-    }
-}
-
-function saveBoxPositions() {
-    boundingBoxes = []
-    const boxes = document.getElementsByClassName("box");
-    for (let box of boxes){
-        const width = convertPxStringToInt(box.style.width);
-        const height = convertPxStringToInt(box.style.height);
-        const left = convertPxStringToInt(box.style.left);
-        const right = convertPxStringToInt(box.style.left) + width;
-        const top = convertPxStringToInt(box.style.top);
-        const bottom= convertPxStringToInt(box.style.top) + height;
-        boundingBoxes.push([left / outputPreviewImg.width, top / outputPreviewImg.height, right / outputPreviewImg.width, bottom / outputPreviewImg.height]);
-    }
 }
 
 function convertPxStringToInt (str) {
