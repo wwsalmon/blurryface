@@ -249,8 +249,9 @@ function drawBoxesOnDetectedFaces() {
 }
 
 editButton.onclick = async () => {
-    mainButtonRow.classList.add("hidden")
-    editingButtonRow.classList.remove("hidden")
+    mainButtonRow.classList.add("hidden");
+    editingButtonRow.classList.remove("hidden");
+    saveEditsButton.classList.remove("hidden");
 
     outputPreviewImg.src = URL.createObjectURL(file);
     outputPreviewImg.onload = () => {drawBoxesOnDetectedFaces();}
@@ -263,6 +264,7 @@ editButton.onclick = async () => {
 }
 
 cancelButton.onclick = async () => {
+    errorMessage.innerHTML = "";
     outputPreview.innerHTML=""
     outputPreviewImg = document.createElement("img");
     const buffer = await blurredPhoto.getBufferAsync(Jimp.MIME_JPEG);
@@ -289,7 +291,9 @@ cancelButton.onclick = async () => {
 
 saveEditsButton.onclick = async () => {
     saveBoxPositions();
-    outputPreview.innerHTML=""
+
+    outputPreview.innerHTML="";
+    errorMessage.innerHTML = "";
     outputLoading.classList.remove("hidden");
     outputPreview.style.cursor = "default";
     outputPreview.removeEventListener("mousedown", mouseDownHandler);
@@ -298,6 +302,7 @@ saveEditsButton.onclick = async () => {
     outputPreview.removeEventListener("mouseup", mouseUpHandler);
     outputPreview.removeEventListener("keydown", keyDownHandler);
 
+    
     try {
         const imageBuffer = await file.arrayBuffer();
         const imageJimp = await Jimp.read(imageBuffer);
@@ -325,6 +330,7 @@ saveEditsButton.onclick = async () => {
     }
     catch (e) {
         errorMessage.innerHTML = e;
+        saveEditsButton.classList.add("hidden");
         console.log(e);
     }
     outputLoading.classList.add("hidden");

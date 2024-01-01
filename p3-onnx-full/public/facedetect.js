@@ -9,6 +9,7 @@ ort.env.wasm.wasmPaths = {
     "ort-wasm-simd-threaded.wasm": "/ort-wasm-simd-threaded.wasm",
 };
 
+// takes in JIMP image object, returns a list of boxes (with scores omitted)
 async function detectFaces(image, threshold = 0.5) {
     console.log("1. Pre-processing image...");
     const originalImage = image.clone(); // save for blurring later
@@ -36,10 +37,19 @@ async function detectFaces(image, threshold = 0.5) {
         }
     }
     results = nms(results);
+
+    if (results.length == 0){
+        throw new Error("No faces detected");
+    }
     return results.map((result) => result.box)
 }
 
+// takes in JIMP image object and list of boxes, returns a JIMP image object
 async function blurFaces(image, boundingBoxes, blur = 0.1, padding = 0) {
+    if (boundingBoxes.length == 0){
+        throw new Error("No faces to blur");
+    }
+
     const originalImage = image.clone(); // save for blurring later
 
     console.log("5. Blurring image...");
