@@ -84,7 +84,6 @@ async function blurFaces(image, boundingBoxes, blur = 0.1, padding = 0) {
         const y1 = box[1] * originalHeight;
         const y2 = box[3] * originalHeight;
         const h = y2 - y1;
-        console.log("HEYY" , w,h)
 
         if (w > maxDim) maxDim = w;
         if (h > maxDim) maxDim = h;

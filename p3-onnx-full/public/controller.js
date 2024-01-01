@@ -22,8 +22,8 @@ let endX = 0;
 let endY = 0;
 let newBox = null;
 let draggedBox = null;
-let initialLeft = 0;
-let initialTop = 0;
+let initialLeftOffset = 0;
+let initialTopOffset = 0;
 
 // VIEW
 // VIEW
@@ -184,8 +184,8 @@ function drawBoxesOnDetectedFaces() {
         newBox = document.createElement("div");
         newBox.classList.add("box");
         newBox.setAttribute("tabindex", 0);
-        newBox.style.width = aw + 'px';
-        newBox.style.height = ah + 'px';
+        newBox.style.width = aw + "px";
+        newBox.style.height = ah + "px";
         newBox.style.left = ax1 + "px";
         newBox.style.top = ay1 + "px";
         outputPreview.appendChild(newBox);
@@ -215,21 +215,22 @@ function mouseDownHandler (event) {
         const clickPos = getPosWithinElement(event.currentTarget, event);
         startX = clickPos[0]; 
         startY = clickPos[1];
-        initialLeft = parseInt(draggedBox.style.left.substring(0, draggedBox.style.left.length - 2));
-        initialTop = parseInt(draggedBox.style.top.substring(0, draggedBox.style.left.length - 2));
+        initialLeftOffset = parseInt(draggedBox.style.left.substring(0, draggedBox.style.left.length - 2));
+        initialTopOffset = parseInt(draggedBox.style.top.substring(0, draggedBox.style.left.length - 2));
         return;
     }
     // start drawing a new box
     newBox = document.createElement("div");
     newBox.classList.add("box");
     newBox.setAttribute("tabindex", 0); // make focusable
-    newBox.style.width = '0px';
-    newBox.style.height = '0px';
+    newBox.style.width = "0px";
+    newBox.style.height = "0px";
 
     const clickPos = getPosWithinElement(event.currentTarget, event);
     startX = clickPos[0];
     startY = clickPos[1];
-
+    newBox.style.left = startX + "px";
+    newBox.style.top = startY + "px";
     event.currentTarget.appendChild(newBox);
 }
 
@@ -242,15 +243,15 @@ function mouseMoveHandler(event) {
 
     if (draggedBox){
         // the min & max functions make sure boxes stay within bounds of image
-        draggedBox.style.left = Math.min(Math.max(0, (initialLeft + endX - startX)), outputPreviewImg.width - convertPxStringToInt(draggedBox.style.width)) + "px";
-        draggedBox.style.top = Math.min(Math.max(0, (initialTop + endY - startY)), outputPreviewImg.height - convertPxStringToInt(draggedBox.style.height)) + "px";
+        draggedBox.style.left = Math.min(Math.max(0, (initialLeftOffset + endX - startX)), outputPreviewImg.width - convertPxStringToInt(draggedBox.style.width)) + "px";
+        draggedBox.style.top = Math.min(Math.max(0, (initialTopOffset + endY - startY)), outputPreviewImg.height - convertPxStringToInt(draggedBox.style.height)) + "px";
         return;
     }
 
-    newBox.style.width = Math.abs(endX - startX) + 'px';
-    newBox.style.height = Math.abs(endY - startY) + 'px';
-    newBox.style.left = (endX - startX < 0) ? endX + 'px' : startX + 'px';
-    newBox.style.top = (endY - startY < 0) ? endY + 'px' : startY + 'px';
+    newBox.style.width = Math.abs(endX - startX) + "px";
+    newBox.style.height = Math.abs(endY - startY) + "px";
+    newBox.style.left = (endX - startX < 0) ? endX + "px" : startX + "px";
+    newBox.style.top = (endY - startY < 0) ? endY + "px" : startY + "px";
 }
 
 function mouseUpHandler(event) {
@@ -264,8 +265,8 @@ function mouseUpHandler(event) {
 }
 
 function keyDownHandler(event) {
-    if (event.key === 'Delete' || event.key === 'Backspace') {
-        if (document.activeElement.className === 'box'){
+    if (event.key === "Delete" || event.key === "Backspace") {
+        if (document.activeElement.className === "box"){
             document.activeElement.remove();
         }
     }
@@ -283,12 +284,13 @@ editButton.onclick = async () => {
     outputPreview.addEventListener("keydown", keyDownHandler);
     outputPreview.addEventListener("mousedown", mouseDownHandler);
     outputPreview.addEventListener("mousemove", mouseMoveHandler);
-    outputPreview.addEventListener("mouseup", mouseUpHandler);
+    // on window prevents unintuitive behavior when a user releases click outside outputPreview
+    window.addEventListener("mouseup", mouseUpHandler);
 }
 
 cancelButton.onclick = async () => {
     errorMessage.innerHTML = "";
-    outputPreview.innerHTML=""
+    outputPreview.innerHTML = ""
     outputPreviewImg = document.createElement("img");
     const buffer = await blurredPhoto.getBufferAsync(Jimp.MIME_JPEG);
     const dataURL = "data:image/jpeg;base64," + buffer.toString("base64");
@@ -304,7 +306,7 @@ cancelButton.onclick = async () => {
     outputPreview.removeEventListener("mousedown", mouseDownHandler);
     outputPreview.removeEventListener("mousemove", mouseMoveHandler);
     outputPreview.removeEventListener("mouseup", mouseUpHandler);
-    outputPreview.removeEventListener("mouseup", mouseUpHandler);
+    window.removeEventListener("mouseup", mouseUpHandler);
     outputPreview.removeEventListener("keydown", keyDownHandler);
 
     editingButtonRow.classList.add("hidden");
@@ -314,14 +316,14 @@ cancelButton.onclick = async () => {
 saveEditsButton.onclick = async () => {
     saveBoxPositions();
 
-    outputPreview.innerHTML="";
+    outputPreview.innerHTML = "";
     errorMessage.innerHTML = "";
     outputLoading.classList.remove("hidden");
     outputPreview.style.cursor = "default";
     outputPreview.removeEventListener("mousedown", mouseDownHandler);
     outputPreview.removeEventListener("mousemove", mouseMoveHandler);
     outputPreview.removeEventListener("mouseup", mouseUpHandler);
-    outputPreview.removeEventListener("mouseup", mouseUpHandler);
+    window.removeEventListener("mouseup", mouseUpHandler);
     outputPreview.removeEventListener("keydown", keyDownHandler);
 
     try {
