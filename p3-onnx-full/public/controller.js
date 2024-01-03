@@ -15,7 +15,8 @@ let fileName = null;
 let file = null;
 let blurredPhoto = null;
 let outputPreviewImg = null;
-let boundingBoxes = [];
+let boxPositions = []; // tracks the currently drawn boxes
+let confirmedBoxPositions = []; // tracks boxes that have been saved & applied
 let startX = 0;
 let startY = 0;
 let endX = 0;
@@ -62,7 +63,6 @@ const linkButton = document.getElementById("linkButton");
 // CONTROLLER
 // CONTROLLER
 
-
 // upload photo
 photoIn.onchange = e => {
     if (e.target.files[0]) file = e.target.files[0]; else return;
@@ -100,8 +100,9 @@ function updateBlurClick() {
         try {
             const imageBuffer = await file.arrayBuffer();
             const imageJimp = await Jimp.read(imageBuffer);
-            boundingBoxes = await detectFaces(imageJimp, (100 - sensitivity) / 100);
-            blurredPhoto = await blurFaces(imageJimp, boundingBoxes, blurAmount / 100, padding / 100);
+            confirmedBoxPositions = await detectFaces(imageJimp, (100 - sensitivity) / 100);
+            boxPositions = confirmedBoxPositions;
+            blurredPhoto = await blurFaces(imageJimp, confirmedBoxPositions, blurAmount / 100, padding / 100);
         
             // update view
             outputPreviewImg = document.createElement("img");
@@ -166,8 +167,8 @@ function getPosWithinElement(element, event) {
 }
 
 // converts positions into DOM element boxes
-function drawBoxesOnDetectedFaces() {
-    for (let box of boundingBoxes) {
+function drawBoxes(boxPositions) {
+    for (let box of boxPositions) {
         const x1 = box[0] * outputPreviewImg.width;
         const x2 = box[2] * outputPreviewImg.width;
         const w = x2 - x1;
@@ -195,22 +196,22 @@ function drawBoxesOnDetectedFaces() {
 
 // converts DOM element boxes into positions
 function saveBoxPositions() {
-    boundingBoxes = []
+    boxPositions = [];
     const boxes = document.getElementsByClassName("box");
-    for (let box of boxes){
+    for (let box of boxes) {
         const width = convertPxStringToInt(box.style.width);
         const height = convertPxStringToInt(box.style.height);
         const left = convertPxStringToInt(box.style.left);
         const right = convertPxStringToInt(box.style.left) + width;
         const top = convertPxStringToInt(box.style.top);
         const bottom= convertPxStringToInt(box.style.top) + height;
-        boundingBoxes.push([left / outputPreviewImg.width, top / outputPreviewImg.height, right / outputPreviewImg.width, bottom / outputPreviewImg.height]);
+        boxPositions.push([left / outputPreviewImg.width, top / outputPreviewImg.height, right / outputPreviewImg.width, bottom / outputPreviewImg.height]);
     }
 }
 
 function mouseDownHandler (event) {
     // prepare to move existing box
-    if (event.target.className == "box"){
+    if (event.target.className == "box") {
         draggedBox = event.target
         const clickPos = getPosWithinElement(event.currentTarget, event);
         startX = clickPos[0]; 
@@ -241,7 +242,7 @@ function mouseMoveHandler(event) {
     endX = mousePos[0];
     endY = mousePos[1];
 
-    if (draggedBox){
+    if (draggedBox) {
         // the min & max functions make sure boxes stay within bounds of image
         draggedBox.style.left = Math.min(Math.max(0, (initialLeftOffset + endX - startX)), outputPreviewImg.width - convertPxStringToInt(draggedBox.style.width)) + "px";
         draggedBox.style.top = Math.min(Math.max(0, (initialTopOffset + endY - startY)), outputPreviewImg.height - convertPxStringToInt(draggedBox.style.height)) + "px";
@@ -262,6 +263,7 @@ function mouseUpHandler(event) {
     startY = 0;
     endX = 0;
     endY = 0;
+    saveBoxPositions();
 }
 
 function keyDownHandler(event) {
@@ -270,6 +272,7 @@ function keyDownHandler(event) {
             document.activeElement.remove();
         }
     }
+    saveBoxPositions();
 }
 
 editButton.onclick = async () => {
@@ -278,19 +281,21 @@ editButton.onclick = async () => {
     saveEditsButton.classList.remove("hidden");
 
     outputPreviewImg.src = URL.createObjectURL(file);
-    outputPreviewImg.onload = () => {drawBoxesOnDetectedFaces();}
+    outputPreviewImg.onload = () => {drawBoxes(confirmedBoxPositions);}
     
     outputPreview.style.cursor = "crosshair";
     outputPreview.addEventListener("keydown", keyDownHandler);
     outputPreview.addEventListener("mousedown", mouseDownHandler);
     outputPreview.addEventListener("mousemove", mouseMoveHandler);
-    // on window prevents unintuitive behavior when a user releases click outside outputPreview
+    // adding on window prevents unintuitive behavior when user lifts click outside outputPreview
     window.addEventListener("mouseup", mouseUpHandler);
 }
 
 cancelButton.onclick = async () => {
+    boxPositions = confirmedBoxPositions;
+    drawBoxes(confirmedBoxPositions);
     errorMessage.innerHTML = "";
-    outputPreview.innerHTML = ""
+    outputPreview.innerHTML = "";
     outputPreviewImg = document.createElement("img");
     const buffer = await blurredPhoto.getBufferAsync(Jimp.MIME_JPEG);
     const dataURL = "data:image/jpeg;base64," + buffer.toString("base64");
@@ -314,8 +319,6 @@ cancelButton.onclick = async () => {
 }
 
 saveEditsButton.onclick = async () => {
-    saveBoxPositions();
-
     outputPreview.innerHTML = "";
     errorMessage.innerHTML = "";
     outputLoading.classList.remove("hidden");
@@ -329,12 +332,14 @@ saveEditsButton.onclick = async () => {
     try {
         const imageBuffer = await file.arrayBuffer();
         const imageJimp = await Jimp.read(imageBuffer);
-        blurredPhoto = await blurFaces(imageJimp, boundingBoxes, blurAmount/100, padding/100);
+        blurredPhoto = await blurFaces(imageJimp, boxPositions, blurAmount/100, padding/100);
     
+        confirmedBoxPositions = boxPositions;
+
         outputPreviewImg = document.createElement("img");
         const buffer = await blurredPhoto.getBufferAsync(Jimp.MIME_JPEG);
         const dataURL = "data:image/jpeg;base64," + buffer.toString("base64");
-        outputPreviewImg.src = dataURL
+        outputPreviewImg.src = dataURL;
         
         outputPreviewImg.setAttribute("draggable", false);
         outputPreviewImg.classList.add("select-none");
@@ -356,6 +361,19 @@ saveEditsButton.onclick = async () => {
         console.log(e);
     }
     outputLoading.classList.add("hidden");
+}
+
+window.onresize = () => {
+    boxes = document.getElementsByClassName("box");
+    if (boxes.length === 0) return;
+
+    // remove all drawn boxes
+    for (let i = boxes.length; i > 0; i--) {
+        boxes[i-1].remove();
+    }
+
+    // redraw according to relative positions
+    drawBoxes(boxPositions);
 }
 
 function convertPxStringToInt (str) {

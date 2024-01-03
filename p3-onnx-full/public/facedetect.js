@@ -38,15 +38,15 @@ async function detectFaces(image, threshold = 0.5) {
     }
     results = nms(results);
 
-    if (results.length == 0){
+    if (results.length == 0) {
         throw new Error("No faces detected");
     }
     return results.map((result) => result.box)
 }
 
 // takes in JIMP image object and list of boxes, returns a JIMP image object
-async function blurFaces(image, boundingBoxes, blur = 0.1, padding = 0) {
-    if (boundingBoxes.length == 0){
+async function blurFaces(image, boxPositions, blur = 0.1, padding = 0) {
+    if (boxPositions.length == 0) {
         throw new Error("No faces to blur");
     }
 
@@ -76,7 +76,7 @@ async function blurFaces(image, boundingBoxes, blur = 0.1, padding = 0) {
 
     console.log("5b. Drawing mask");
     
-    for (let box of boundingBoxes) {
+    for (let box of boxPositions) {
         // scale model output coordinates, get width and height
         const x1 = box[0] * originalWidth;
         const x2 = box[2] * originalWidth;
