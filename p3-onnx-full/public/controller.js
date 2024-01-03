@@ -160,7 +160,7 @@ linkButton.onclick = () => {
     open("https://github.com/wwsalmon/blurryface");
 }
 
-// returns [x, y] relative to given element
+// returns the [x, y] of an event (in px) relative to given element
 function getPosWithinElement(element, event) {
     const rect = element.getBoundingClientRect();
     return [event.clientX - rect.left, event.clientY - rect.top];
@@ -221,15 +221,15 @@ function mouseDownHandler (event) {
         return;
     }
     // start drawing a new box
+    const clickPos = getPosWithinElement(event.currentTarget, event);
+    startX = clickPos[0];
+    startY = clickPos[1];
+
     newBox = document.createElement("div");
     newBox.classList.add("box");
     newBox.setAttribute("tabindex", 0); // make focusable
     newBox.style.width = "0px";
     newBox.style.height = "0px";
-
-    const clickPos = getPosWithinElement(event.currentTarget, event);
-    startX = clickPos[0];
-    startY = clickPos[1];
     newBox.style.left = startX + "px";
     newBox.style.top = startY + "px";
     event.currentTarget.appendChild(newBox);
@@ -292,8 +292,9 @@ editButton.onclick = async () => {
 }
 
 cancelButton.onclick = async () => {
+    // reset the stored box positions
     boxPositions = confirmedBoxPositions;
-    drawBoxes(confirmedBoxPositions);
+
     errorMessage.innerHTML = "";
     outputPreview.innerHTML = "";
     outputPreviewImg = document.createElement("img");
@@ -334,6 +335,7 @@ saveEditsButton.onclick = async () => {
         const imageJimp = await Jimp.read(imageBuffer);
         blurredPhoto = await blurFaces(imageJimp, boxPositions, blurAmount/100, padding/100);
     
+        // if blurring did not error, it's safe to save box positions
         confirmedBoxPositions = boxPositions;
 
         outputPreviewImg = document.createElement("img");
