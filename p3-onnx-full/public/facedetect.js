@@ -12,9 +12,9 @@ ort.env.wasm.wasmPaths = {
 // takes in JIMP image object, returns a list of boxes (with scores omitted)
 async function detectFaces(image, threshold = 0.5) {
     console.log("1. Pre-processing image...");
-    const originalImage = image.clone(); // save for blurring later
-    image.resize(640, 480);
-    const imageData = image.bitmap.data; // rgba array
+    const thisImage = image.clone(); // save for blurring later
+    thisImage.resize(640, 480);
+    const imageData = thisImage.bitmap.data; // rgba array
     const imageTensor = imageToTensor(imageData);
 
     console.log("2. Initializing session...");
