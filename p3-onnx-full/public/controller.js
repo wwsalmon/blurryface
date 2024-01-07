@@ -88,26 +88,23 @@ function updateBlurClick() {
     if (file) triggerBlur.disabled = false;
 
     triggerBlur.onclick = async () => {
-        // clear previous
-        outputPreview.innerHTML = "";
+        // clear previous photo
         blurredPhoto = null;
-        saveButton.disabled = true;
-        errorMessage.innerHTML = "";
 
-        // enter loading state
-        triggerBlur.disabled = true;
-        outputLoading.classList.remove("hidden");
+        // update view for loading
+        enterLoadingState();
 
         try {
+            // get new photo
             const imageBuffer = await file.arrayBuffer();
             const imageJimp = await Jimp.read(imageBuffer);
             confirmedBoxPositions = await detectFaces(imageJimp, (100 - sensitivity) / 100);
             boxPositions = confirmedBoxPositions;
             blurredPhoto = await blurFaces(imageJimp, confirmedBoxPositions, blurAmount / 100, padding / 100);
-        
-            // update view
             const buffer = await blurredPhoto.getBufferAsync(Jimp.MIME_JPEG);
             blurredPhotoDataUrl = "data:image/jpeg;base64," + buffer.toString("base64");
+        
+            // update view
             updateOutput();
         } catch (e) {
             errorMessage.innerHTML = e;
@@ -118,6 +115,17 @@ function updateBlurClick() {
         triggerBlur.disabled = false;
         outputLoading.classList.add("hidden");
     }
+}
+
+function enterLoadingState() {
+    outputPreview.innerHTML = "";
+    errorMessage.innerHTML = "";
+    saveButton.disabled = true;
+    triggerBlur.disabled = true;
+    editButton.disabled = true;
+    saveEditsButton.disabled = true;
+    cancelButton.disabled = true;
+    outputLoading.classList.remove("hidden");
 }
 
 async function updateOutput() {
@@ -146,6 +154,7 @@ async function updateOutput() {
     }
     hideEl(editingButtonRow);
     showEl(mainButtonRow);
+
     saveButton.disabled = false;
     editButton.disabled = false;
 }
@@ -153,7 +162,11 @@ async function updateOutput() {
 // edit functionality
 editButton.onclick = async () => {
     hideEl(mainButtonRow);
-    showEl(editingButtonRow, saveEditsButton);
+    showEl(editingButtonRow);
+
+    // make sure editing button row buttons enabled
+    saveEditsButton.disabled = false;
+    cancelButton.disabled = false;
 
     // draw unblurred image, boxes
     outputPreviewImg.src = URL.createObjectURL(file);
@@ -183,9 +196,9 @@ cancelButton.onclick = async () => {
 }
 
 saveEditsButton.onclick = async () => {
-    outputPreview.innerHTML = "";
-    errorMessage.innerHTML = "";
-    outputLoading.classList.remove("hidden");
+    enterLoadingState();
+
+    // reset outputPreview edit-specific things
     outputPreview.style.cursor = "default";
     outputPreview.removeEventListener("mousedown", mouseDownHandler);
     outputPreview.removeEventListener("mousemove", mouseMoveHandler);
