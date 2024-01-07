@@ -14,6 +14,7 @@ let sensitivity = 50;
 let fileName = null;
 let file = null;
 let blurredPhoto = null;
+let blurredPhotoDataUrl = null;
 let outputPreviewImg = null;
 let boxPositions = []; // tracks the currently drawn boxes
 let confirmedBoxPositions = []; // tracks boxes that have been saved & applied
@@ -108,6 +109,7 @@ function updateBlurClick() {
             outputPreviewImg = document.createElement("img");
             const buffer = await blurredPhoto.getBufferAsync(Jimp.MIME_JPEG);
             const dataURL = "data:image/jpeg;base64," + buffer.toString("base64");
+            blurredPhotoDataUrl = dataURL;
             outputPreviewImg.src = dataURL;
             outputPreviewImg.setAttribute("draggable", false);
             outputPreviewImg.classList.add("select-none");
@@ -298,9 +300,7 @@ cancelButton.onclick = async () => {
     errorMessage.innerHTML = "";
     outputPreview.innerHTML = "";
     outputPreviewImg = document.createElement("img");
-    const buffer = await blurredPhoto.getBufferAsync(Jimp.MIME_JPEG);
-    const dataURL = "data:image/jpeg;base64," + buffer.toString("base64");
-    outputPreviewImg.src = dataURL;
+    outputPreviewImg.src = blurredPhotoDataUrl;
     outputPreviewImg.setAttribute("draggable", false);
     outputPreviewImg.classList.add("select-none");
     outputPreviewImg.onload = function () {
@@ -341,6 +341,7 @@ saveEditsButton.onclick = async () => {
         outputPreviewImg = document.createElement("img");
         const buffer = await blurredPhoto.getBufferAsync(Jimp.MIME_JPEG);
         const dataURL = "data:image/jpeg;base64," + buffer.toString("base64");
+        blurredPhotoDataUrl = dataURL;
         outputPreviewImg.src = dataURL;
         
         outputPreviewImg.setAttribute("draggable", false);
