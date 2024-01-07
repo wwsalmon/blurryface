@@ -43,7 +43,7 @@ const outputPreview = document.getElementById("outputPreview");
 const outputLoading = document.getElementById("outputLoading");
 const errorMessage = document.getElementById("errorMessage");
 const mainButtonRow = document.getElementById("mainButtonRow")
-const downloadButton = document.getElementById("downloadButton");
+const saveButton = document.getElementById("downloadButton");
 const editButton = document.getElementById("editButton");
 const editingButtonRow = document.getElementById("editingButtonRow");
 const cancelButton = document.getElementById("cancelButton");
@@ -91,7 +91,7 @@ function updateBlurClick() {
         // clear previous
         outputPreview.innerHTML = "";
         blurredPhoto = null;
-        downloadButton.disabled = true;
+        saveButton.disabled = true;
         errorMessage.innerHTML = "";
 
         // enter loading state
@@ -106,26 +106,9 @@ function updateBlurClick() {
             blurredPhoto = await blurFaces(imageJimp, confirmedBoxPositions, blurAmount / 100, padding / 100);
         
             // update view
-            outputPreviewImg = document.createElement("img");
             const buffer = await blurredPhoto.getBufferAsync(Jimp.MIME_JPEG);
-            const dataURL = "data:image/jpeg;base64," + buffer.toString("base64");
-            blurredPhotoDataUrl = dataURL;
-            outputPreviewImg.src = dataURL;
-            outputPreviewImg.setAttribute("draggable", false);
-            outputPreviewImg.classList.add("select-none");
-            outputPreview.appendChild(outputPreviewImg);
-
-            // update download button
-            downloadButton.disabled = false;
-            editButton.disabled = false;
-
-            downloadButton.onclick = async () => {
-                const {save} = window.__TAURI__.dialog;
-                const {writeBinaryFile} = window.__TAURI__.fs;
-                const defaultName = fileName + "_blurryface.jpg";
-                const filePath = await save({defaultPath: defaultName, filters: [{extensions: ["jpg"], name: "JPEG image"}]});
-                await writeBinaryFile(filePath, buffer);
-            }
+            blurredPhotoDataUrl = "data:image/jpeg;base64," + buffer.toString("base64");
+            updateOutput();
         } catch (e) {
             errorMessage.innerHTML = e;
             console.log(e);
@@ -137,35 +120,99 @@ function updateBlurClick() {
     }
 }
 
-// sliders
-blurSlider.onchange = e => {
-    blurAmount = e.target.value;
-    blurReadout.textContent = blurAmount + "%";
-    updateBlurClick();
+async function updateOutput() {
+    // clear previous
+    outputPreview.innerHTML = "";
+    errorMessage.innerHTML = "";
+
+    // update output preview
+    outputPreviewImg = document.createElement("img");
+    outputPreviewImg.src = blurredPhotoDataUrl;
+    outputPreviewImg.setAttribute("draggable", false);
+    outputPreviewImg.classList.add("select-none");
+    outputPreviewImg.onload = function () {
+        outputPreview.appendChild(outputPreviewImg);
+    }
+
+    // update buttons
+    const buffer = await blurredPhoto.getBufferAsync(Jimp.MIME_JPEG);
+
+    saveButton.onclick = async () => {
+        const {save} = window.__TAURI__.dialog;
+        const {writeBinaryFile} = window.__TAURI__.fs;
+        const defaultName = fileName + "_blurryface.jpg";
+        const filePath = await save({defaultPath: defaultName, filters: [{extensions: ["jpg"], name: "JPEG image"}]});
+        await writeBinaryFile(filePath, buffer);
+    }
+    hideEl(editingButtonRow);
+    showEl(mainButtonRow);
+    saveButton.disabled = false;
+    editButton.disabled = false;
 }
 
-paddingSlider.onchange = e => {
-    padding = e.target.value;
-    paddingReadout.textContent = padding + "%";
-    updateBlurClick();
+// edit functionality
+editButton.onclick = async () => {
+    hideEl(mainButtonRow);
+    showEl(editingButtonRow, saveEditsButton);
+
+    // draw unblurred image, boxes
+    outputPreviewImg.src = URL.createObjectURL(file);
+    outputPreviewImg.onload = () => {drawBoxes(confirmedBoxPositions);}
+
+    outputPreview.style.cursor = "crosshair";
+    outputPreview.addEventListener("keydown", keyDownHandler);
+    outputPreview.addEventListener("mousedown", mouseDownHandler);
+    outputPreview.addEventListener("mousemove", mouseMoveHandler);
+    // adding on window prevents unintuitive behavior when user lifts click outside outputPreview
+    window.addEventListener("mouseup", mouseUpHandler);
 }
 
-sensitivitySlider.onchange = e => {
-    sensitivity = e.target.value;
-    sensitivityReadout.textContent = sensitivity + "%";
-    updateBlurClick();
+cancelButton.onclick = async () => {
+    // reset the stored box positions
+    boxPositions = confirmedBoxPositions;
+    
+    updateOutput(); // update to previous output image, buttons
+
+    // remove event listeners
+    outputPreview.style.cursor = "default";
+    outputPreview.removeEventListener("mousedown", mouseDownHandler);
+    outputPreview.removeEventListener("mousemove", mouseMoveHandler);
+    outputPreview.removeEventListener("mouseup", mouseUpHandler);
+    window.removeEventListener("mouseup", mouseUpHandler);
+    outputPreview.removeEventListener("keydown", keyDownHandler);
 }
 
-// linkButton
-const {open} = window.__TAURI__.shell;
-linkButton.onclick = () => {
-    open("https://github.com/wwsalmon/blurryface");
-}
+saveEditsButton.onclick = async () => {
+    outputPreview.innerHTML = "";
+    errorMessage.innerHTML = "";
+    outputLoading.classList.remove("hidden");
+    outputPreview.style.cursor = "default";
+    outputPreview.removeEventListener("mousedown", mouseDownHandler);
+    outputPreview.removeEventListener("mousemove", mouseMoveHandler);
+    outputPreview.removeEventListener("mouseup", mouseUpHandler);
+    window.removeEventListener("mouseup", mouseUpHandler);
+    outputPreview.removeEventListener("keydown", keyDownHandler);
 
-// returns the [x, y] of an event (in px) relative to given element
-function getPosWithinElement(element, event) {
-    const rect = element.getBoundingClientRect();
-    return [event.clientX - rect.left, event.clientY - rect.top];
+    try {
+        const imageBuffer = await file.arrayBuffer();
+        const imageJimp = await Jimp.read(imageBuffer);
+        blurredPhoto = await blurFaces(imageJimp, boxPositions, blurAmount/100, padding/100);
+        const buffer = await blurredPhoto.getBufferAsync(Jimp.MIME_JPEG);
+        const dataURL = "data:image/jpeg;base64," + buffer.toString("base64");
+        blurredPhotoDataUrl = dataURL;
+    
+        // if blurring did not error, it's safe to save box positions
+        confirmedBoxPositions = boxPositions;
+
+        updateOutput();
+        hideEl(editingButtonRow);
+        showEl(mainButtonRow);
+    } catch (e) {
+        errorMessage.innerHTML = e;
+        saveEditsButton.classList.add("hidden");
+        console.log(e);
+    }
+    outputLoading.classList.add("hidden");
 }
 
 // converts positions into DOM element boxes
@@ -277,95 +324,6 @@ function keyDownHandler(event) {
     saveBoxPositions();
 }
 
-editButton.onclick = async () => {
-    mainButtonRow.classList.add("hidden");
-    editingButtonRow.classList.remove("hidden");
-    saveEditsButton.classList.remove("hidden");
-
-    outputPreviewImg.src = URL.createObjectURL(file);
-    outputPreviewImg.onload = () => {drawBoxes(confirmedBoxPositions);}
-    
-    outputPreview.style.cursor = "crosshair";
-    outputPreview.addEventListener("keydown", keyDownHandler);
-    outputPreview.addEventListener("mousedown", mouseDownHandler);
-    outputPreview.addEventListener("mousemove", mouseMoveHandler);
-    // adding on window prevents unintuitive behavior when user lifts click outside outputPreview
-    window.addEventListener("mouseup", mouseUpHandler);
-}
-
-cancelButton.onclick = async () => {
-    // reset the stored box positions
-    boxPositions = confirmedBoxPositions;
-
-    errorMessage.innerHTML = "";
-    outputPreview.innerHTML = "";
-    outputPreviewImg = document.createElement("img");
-    outputPreviewImg.src = blurredPhotoDataUrl;
-    outputPreviewImg.setAttribute("draggable", false);
-    outputPreviewImg.classList.add("select-none");
-    outputPreviewImg.onload = function () {
-        outputLoading.classList.add("hidden");
-        outputPreview.appendChild(outputPreviewImg);
-    }
-
-    outputPreview.style.cursor = "default";
-    outputPreview.removeEventListener("mousedown", mouseDownHandler);
-    outputPreview.removeEventListener("mousemove", mouseMoveHandler);
-    outputPreview.removeEventListener("mouseup", mouseUpHandler);
-    window.removeEventListener("mouseup", mouseUpHandler);
-    outputPreview.removeEventListener("keydown", keyDownHandler);
-
-    editingButtonRow.classList.add("hidden");
-    mainButtonRow.classList.remove("hidden");
-}
-
-saveEditsButton.onclick = async () => {
-    outputPreview.innerHTML = "";
-    errorMessage.innerHTML = "";
-    outputLoading.classList.remove("hidden");
-    outputPreview.style.cursor = "default";
-    outputPreview.removeEventListener("mousedown", mouseDownHandler);
-    outputPreview.removeEventListener("mousemove", mouseMoveHandler);
-    outputPreview.removeEventListener("mouseup", mouseUpHandler);
-    window.removeEventListener("mouseup", mouseUpHandler);
-    outputPreview.removeEventListener("keydown", keyDownHandler);
-
-    try {
-        const imageBuffer = await file.arrayBuffer();
-        const imageJimp = await Jimp.read(imageBuffer);
-        blurredPhoto = await blurFaces(imageJimp, boxPositions, blurAmount/100, padding/100);
-    
-        // if blurring did not error, it's safe to save box positions
-        confirmedBoxPositions = boxPositions;
-
-        outputPreviewImg = document.createElement("img");
-        const buffer = await blurredPhoto.getBufferAsync(Jimp.MIME_JPEG);
-        const dataURL = "data:image/jpeg;base64," + buffer.toString("base64");
-        blurredPhotoDataUrl = dataURL;
-        outputPreviewImg.src = dataURL;
-        
-        outputPreviewImg.setAttribute("draggable", false);
-        outputPreviewImg.classList.add("select-none");
-        outputPreviewImg.onload = function () {
-            outputPreview.appendChild(outputPreviewImg);
-        }
-        downloadButton.onclick = async () => {
-            const {save} = window.__TAURI__.dialog;
-            const {writeBinaryFile} = window.__TAURI__.fs;
-            const defaultName = fileName + "_blurryface.jpg";
-            const filePath = await save({defaultPath: defaultName, filters: [{extensions: ["jpg"], name: "JPEG image"}]});
-            await writeBinaryFile(filePath, buffer);
-        }
-        editingButtonRow.classList.add("hidden");
-        mainButtonRow.classList.remove("hidden");
-    } catch (e) {
-        errorMessage.innerHTML = e;
-        saveEditsButton.classList.add("hidden");
-        console.log(e);
-    }
-    outputLoading.classList.add("hidden");
-}
-
 window.onresize = () => {
     boxes = document.getElementsByClassName("box");
     if (boxes.length === 0) return;
@@ -379,6 +337,53 @@ window.onresize = () => {
     drawBoxes(boxPositions);
 }
 
+// sliders
+blurSlider.onchange = e => {
+    blurAmount = e.target.value;
+    blurReadout.textContent = blurAmount + "%";
+    updateBlurClick();
+}
+
+paddingSlider.onchange = e => {
+    padding = e.target.value;
+    paddingReadout.textContent = padding + "%";
+    updateBlurClick();
+}
+
+sensitivitySlider.onchange = e => {
+    sensitivity = e.target.value;
+    sensitivityReadout.textContent = sensitivity + "%";
+    updateBlurClick();
+}
+
+// linkButton
+const {open} = window.__TAURI__.shell;
+linkButton.onclick = () => {
+    open("https://github.com/wwsalmon/blurryface");
+}
+
+// HELPER FUNCTIONS
+// HELPER FUNCTIONS
+// HELPER FUNCTIONS
+
 function convertPxStringToInt (str) {
     return parseInt(str.substring(0, str.length - 2));
+}
+
+function hideEl(...els) {
+    for (let el of els) {
+        el.classList.add("hidden");
+    }
+}
+
+function showEl(...els) {
+    for (let el of els) {
+        el.classList.remove("hidden");
+    }
+}
+
+// returns the [x, y] of an event (in px) relative to given element
+function getPosWithinElement(element, event) {
+    const rect = element.getBoundingClientRect();
+    return [event.clientX - rect.left, event.clientY - rect.top];
 }
