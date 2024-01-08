@@ -48,6 +48,7 @@ const editButton = document.getElementById("editButton");
 const editingButtonRow = document.getElementById("editingButtonRow");
 const cancelButton = document.getElementById("cancelButton");
 const saveEditsButton = document.getElementById("saveEditsButton");
+const editingHelper = document.getElementById("editingHelper");
 
 // sliders
 const blurSlider = document.getElementById("blurSlider");
@@ -152,7 +153,7 @@ async function updateOutput() {
         const filePath = await save({defaultPath: defaultName, filters: [{extensions: ["jpg"], name: "JPEG image"}]});
         await writeBinaryFile(filePath, buffer);
     }
-    hideEl(editingButtonRow);
+    hideEl(editingButtonRow, editingHelper);
     showEl(mainButtonRow);
 
     saveButton.disabled = false;
@@ -162,7 +163,7 @@ async function updateOutput() {
 // edit functionality
 editButton.onclick = async () => {
     hideEl(mainButtonRow);
-    showEl(editingButtonRow);
+    showEl(editingButtonRow, editingHelper);
 
     // make sure editing button row buttons enabled
     saveEditsButton.disabled = false;
