@@ -172,7 +172,6 @@ editButton.onclick = async () => {
     outputPreviewImg.src = URL.createObjectURL(file);
     outputPreviewImg.onload = () => {drawBoxes(confirmedBoxPositions);}
 
-    outputPreview.style.cursor = "crosshair";
     outputPreview.addEventListener("keydown", keyDownHandler);
     outputPreview.addEventListener("mousedown", mouseDownHandler);
     outputPreview.addEventListener("mousemove", mouseMoveHandler);
@@ -187,7 +186,6 @@ cancelButton.onclick = async () => {
     updateOutput(); // update to previous output image, buttons
 
     // remove event listeners
-    outputPreview.style.cursor = "default";
     outputPreview.removeEventListener("mousedown", mouseDownHandler);
     outputPreview.removeEventListener("mousemove", mouseMoveHandler);
     outputPreview.removeEventListener("mouseup", mouseUpHandler);
@@ -199,7 +197,6 @@ saveEditsButton.onclick = async () => {
     enterLoadingState();
 
     // reset outputPreview edit-specific things
-    outputPreview.style.cursor = "default";
     outputPreview.removeEventListener("mousedown", mouseDownHandler);
     outputPreview.removeEventListener("mousemove", mouseMoveHandler);
     outputPreview.removeEventListener("mouseup", mouseUpHandler);

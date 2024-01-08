@@ -2,14 +2,27 @@
     position: absolute;
     background-color: #0B99FF88;
     box-sizing: border-box;
-    cursor: move;
     resize: both;
+    overflow: auto; /* to get resize to work */
 }
 
 .box:hover:not(:focus) {
-    border: solid 3px #0B99FF;
+    outline: solid 3px #0B99FF;
+    outline-offset: -3px;
 }
 
 .box:focus {
-    border: solid 2px #0B99FF;
+    outline: solid 2px #0B99FF;
+    outline-offset: -2px;
+}
+
+.box:not(:focus)::-webkit-resizer {
+    display: none;
+}
+
+.box:focus::-webkit-resizer {
+    background-color: white;
+    border-top: solid 2px #0B99FF;
+    border-left: solid 2px #0B99FF;
+    cursor: nesw-resize;
 }
