@@ -1,18 +1,15 @@
 .box {
     position: absolute;
-    border: solid 4px lime;
-}
-
-.box:hover {
-    border: solid 4px blue;
+    background-color: #0B99FF88;
+    box-sizing: border-box;
     cursor: move;
-}
-
-.box {
     resize: both;
 }
 
+.box:hover:not(:focus) {
+    border: solid 3px #0B99FF;
+}
+
 .box:focus {
-    outline: dashed 2px black;
-    outline-offset: 4px;
+    border: solid 2px #0B99FF;
 }
