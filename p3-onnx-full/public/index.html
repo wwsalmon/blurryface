@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blurryface</title>
     <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/manualstyle.css">
     <script src="/ort.min.js"></script>
     <script src="/jimp.min.js"></script>
     <script src="/facedetect.js"></script>
@@ -42,9 +43,19 @@
             <h2 class="font-bold my-4">Output</h2>
             <p id="outputLoading" class="hidden">Loading...</p>
             <p id="errorMessage"></p>
-            <div id="outputPreview">
+            <div class="p-4 border bg-white text-sm rounded mb-4 inline-block hidden" id="editingHelper">
+                <span>Click a box to move or resize it.<br/>Press "Delete" or "Backspace" while selected to delete the box.<br/>Click and drag on the image to create a new box.</span>
             </div>
-            <button class="bg-tyellow hover:brightness-95 disabled:opacity-50 px-4 py-2 rounded font-bold mt-4" disabled id="downloadButton">Save image</button>
+            <div id="outputPreview" class="select-none relative"></div>
+
+            <div id="editingButtonRow" class="hidden">
+                <button class="bg-gray-300 hover:brightness-95 disabled:opacity-50 px-4 py-2 rounded font-bold mt-4 font-mono" id="cancelButton">Cancel</button>
+                <button class="bg-tyellow hover:brightness-95 disabled:opacity-50 px-4 py-2 rounded font-bold mt-4 font-mono" id="saveEditsButton">Save edits</button>
+            </div>
+            <div id="mainButtonRow">
+                <button class="bg-gray-300 hover:brightness-95 disabled:opacity-50 px-4 py-2 rounded font-bold mt-4 font-mono" disabled id="editButton">Edit</button>
+                <button class="bg-tyellow hover:brightness-95 disabled:opacity-50 px-4 py-2 rounded font-bold mt-4 font-mono" disabled id="downloadButton">Save image</button>
+            </div>
         </div>
     </div>
     <script src="/controller.js"></script>
