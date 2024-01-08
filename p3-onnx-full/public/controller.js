@@ -316,6 +316,7 @@ function mouseMoveHandler(event) {
 
 function mouseUpHandler(event) {
     if (!newBox && !draggedBox) return;
+    if (newBox) newBox.focus();
     newBox = null;
     draggedBox = null;
     startX = 0;
