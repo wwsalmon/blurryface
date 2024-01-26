@@ -223,6 +223,9 @@ saveEditsButton.onclick = async () => {
         saveEditsButton.classList.add("hidden");
         console.log(e);
     }
+
+    // exit loading state
+    triggerBlur.disabled = false;
     outputLoading.classList.add("hidden");
 }
 
