@@ -9,12 +9,12 @@ ort.env.wasm.wasmPaths = {
     "ort-wasm-simd-threaded.wasm": "/ort-wasm-simd-threaded.wasm",
 };
 
-// takes in JIMP image object, returns a JIMP image object
-async function detectAndBlurFaces(image, blur = 0.1, padding = 0.1, threshold = 0.5) {
+// takes in JIMP image object, returns a list of boxes (with scores omitted)
+async function detectFaces(image, threshold = 0.5) {
     console.log("1. Pre-processing image...");
-    const originalImage = image.clone(); // save for blurring later
-    image.resize(640, 480);
-    const imageData = image.bitmap.data; // rgba array
+    const thisImage = image.clone(); // save for blurring later
+    thisImage.resize(640, 480);
+    const imageData = thisImage.bitmap.data; // rgba array
     const imageTensor = imageToTensor(imageData);
 
     console.log("2. Initializing session...");
@@ -38,12 +38,27 @@ async function detectAndBlurFaces(image, blur = 0.1, padding = 0.1, threshold = 
     }
     results = nms(results);
 
+    if (results.length == 0) {
+        throw new Error("No faces detected");
+    }
+    return results.map((result) => result.box)
+}
+
+// takes in JIMP image object and list of boxes, returns a JIMP image object
+async function blurFaces(image, boxPositions, blur = 0.1, padding = 0) {
+    if (boxPositions.length == 0) {
+        throw new Error("No faces to blur");
+    }
+
+    const originalImage = image.clone(); // save for blurring later
+
     console.log("5. Blurring image...");
     const originalWidth = originalImage.bitmap.width;
     const originalHeight = originalImage.bitmap.height;
 
     const startTime = Date.now();
     let checkpoint = Date.now();
+
 
     // create canvas for mask
     console.log("5a. Creating canvas");
@@ -56,20 +71,18 @@ async function detectAndBlurFaces(image, blur = 0.1, padding = 0.1, threshold = 
     maskCtx.fillStyle = "white"; // prepare to draw white masks for faces
 
     let maxDim = 0;
-    let i = 0;
 
     checkpoint = reportElapsedTime(checkpoint);
 
     console.log("5b. Drawing mask");
     
-    for (let result of results) {
-        i++;
+    for (let box of boxPositions) {
         // scale model output coordinates, get width and height
-        const x1 = result.box[0] * originalWidth;
-        const x2 = result.box[2] * originalWidth;
+        const x1 = box[0] * originalWidth;
+        const x2 = box[2] * originalWidth;
         const w = x2 - x1;
-        const y1 = result.box[1] * originalHeight;
-        const y2 = result.box[3] * originalHeight;
+        const y1 = box[1] * originalHeight;
+        const y2 = box[3] * originalHeight;
         const h = y2 - y1;
 
         if (w > maxDim) maxDim = w;
