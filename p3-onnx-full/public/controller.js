@@ -207,13 +207,26 @@ saveEditsButton.onclick = async () => {
     try {
         const imageBuffer = await file.arrayBuffer();
         const imageJimp = await Jimp.read(imageBuffer);
-        blurredPhoto = await blurFaces(imageJimp, boxPositions, blurAmount/100, padding/100);
+        // fix padding
+        const fixedBoxPositions = boxPositions.map(box => {
+            const [ax1, ay1, ax2, ay2] = box;
+            const aw = ax2 - ax1;
+            const ah = ay2 - ay1;
+            const w = aw / (1 + 2 * padding / 100);
+            const h = ah / (1 + 2 * padding / 100);
+            const x1 = ax1 + w * padding / 100;
+            const y1 = ay1 + h * padding / 100;
+            const x2 = ax2 - w * padding / 100;
+            const y2 = ay2 - h * padding / 100;
+            return [x1, y1, x2, y2];
+        });
+        blurredPhoto = await blurFaces(imageJimp, fixedBoxPositions, blurAmount/100, padding/100);
         const buffer = await blurredPhoto.getBufferAsync(Jimp.MIME_JPEG);
         const dataURL = "data:image/jpeg;base64," + buffer.toString("base64");
         blurredPhotoDataUrl = dataURL;
     
         // if blurring did not error, it's safe to save box positions
-        confirmedBoxPositions = boxPositions;
+        confirmedBoxPositions = fixedBoxPositions;
 
         updateOutput();
         hideEl(editingButtonRow);
