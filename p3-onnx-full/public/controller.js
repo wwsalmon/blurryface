@@ -39,6 +39,7 @@ const inputPreview = document.getElementById("inputPreview");
 // output
 const containerOutput = document.getElementById("containerOutput");
 const triggerBlur = document.getElementById("triggerBlur");
+const triggerManual = document.getElementById("triggerManual");
 const outputPreview = document.getElementById("outputPreview");
 const outputLoading = document.getElementById("outputLoading");
 const errorMessage = document.getElementById("errorMessage");
@@ -87,35 +88,57 @@ photoIn.onchange = e => {
 
 function updateBlurClick() {
     if (file) triggerBlur.disabled = false;
+    if (file) triggerManual.disabled = false;
 
-    triggerBlur.onclick = async () => {
-        // clear previous photo
-        blurredPhoto = null;
+    triggerBlur.onclick = () => onBlurClick(false);
+    triggerManual.onclick = () => onBlurClick(true);
+}
 
-        // update view for loading
-        enterLoadingState();
+// manual: optional boolean
+async function onBlurClick(manual) {
+    // clear previous photo
+    blurredPhoto = null;
 
-        try {
-            // get new photo
-            const imageBuffer = await file.arrayBuffer();
-            const imageJimp = await Jimp.read(imageBuffer);
+    // update view for loading
+    enterLoadingState();
+
+    try {
+        // get new photo
+        const imageBuffer = await file.arrayBuffer();
+        const imageJimp = await Jimp.read(imageBuffer);
+        if (manual) {
+            confirmedBoxPositions = [];
+            boxPositions = [];
+            blurredPhoto = imageJimp.clone();
+        } else {
             confirmedBoxPositions = await detectFaces(imageJimp, (100 - sensitivity) / 100);
             boxPositions = confirmedBoxPositions;
             blurredPhoto = await blurFaces(imageJimp, confirmedBoxPositions, blurAmount / 100, padding / 100);
-            const buffer = await blurredPhoto.getBufferAsync(Jimp.MIME_JPEG);
-            blurredPhotoDataUrl = "data:image/jpeg;base64," + buffer.toString("base64");
-        
-            // update view
-            updateOutput();
-        } catch (e) {
-            errorMessage.innerHTML = e;
-            console.log(e);
         }
+        const buffer = await blurredPhoto.getBufferAsync(Jimp.MIME_JPEG);
+        blurredPhotoDataUrl = "data:image/jpeg;base64," + buffer.toString("base64");
+    
+        // update view
+        await updateOutput();
 
-        // exit loading state
-        triggerBlur.disabled = false;
-        outputLoading.classList.add("hidden");
+        if (manual) {
+            setTimeout(() => {
+                editButton.click();
+            }, 10); // it needs a timeout to work not sure why
+        }
+    } catch (e) {
+        errorMessage.innerHTML = e;
+        console.log(e);
     }
+
+    // exit loading state
+    exitLoadingState();
+}
+
+function exitLoadingState() {
+    triggerBlur.disabled = false;
+    triggerManual.disabled = false;
+    outputLoading.classList.add("hidden");
 }
 
 function enterLoadingState() {
@@ -123,6 +146,7 @@ function enterLoadingState() {
     errorMessage.innerHTML = "";
     saveButton.disabled = true;
     triggerBlur.disabled = true;
+    triggerManual.disabled = true;
     editButton.disabled = true;
     saveEditsButton.disabled = true;
     cancelButton.disabled = true;
