@@ -14,7 +14,7 @@
     <div class="w-full flex min-h-screen text-center">
         <div class="w-1/2 p-4 bg-white" id="containerInput">
             <img src="/blurryface-logo.png" alt="Blurryface logo" class="h-8 block mt-4 mx-auto"/>
-            <p class="mb-4 text-sm opacity-50">v0.1.2 / <button class="underline" id="linkButton">GitHub</button></p>
+            <p class="mb-4 text-sm opacity-50">v0.1.3 / <button class="underline" id="linkButton">GitHub</button></p>
             <p class="font-sans max-w-sm mx-auto" id="inputText"><strong>Load a photo you would like to blur faces in.</strong> Note that this app works completely offline - no photos or
             information are ever uploaded to any server.</p>
             <div class="rounded p-4 border font-mono text-sm my-4">
@@ -37,6 +37,7 @@
                     <span id="sensitivityReadout">50%</span>
                 </div>
                 <button class="bg-tyellow hover:brightness-95 disabled:opacity-50 px-4 py-2 rounded font-bold mt-4" disabled id="triggerBlur">Blur</button>
+                <button class="bg-gray-300 hover:brightness-95 disabled:opacity-50 px-4 py-2 rounded font-bold mt-4" disabled id="triggerManual">Manual blur</button>
             </div>
         </div>
         <div class="w-1/2 p-4" id="containerOutput">
