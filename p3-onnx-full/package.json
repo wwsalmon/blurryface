@@ -1,6 +1,6 @@
 {
     "name": "blurryface",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "devDependencies": {
         "@tauri-apps/cli": "^1.5.9",
         "autoprefixer": "^10.4.16",
